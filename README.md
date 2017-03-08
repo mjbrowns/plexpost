@@ -52,6 +52,7 @@ Setup is fairly simple.  After installing the latest version of docker-ce, you w
   To do the update, simply execute the *update* script found in the *src* subdirectory (*/docker/data/plex/plexpost/src*).  It does the following things:
   * grabs the comchap and comcut scripts from github and puts them in the *comchap* subdirectory of *src*
   * creates and runs a temporary container using the ubuntu base image, clones the comskip repo, builds comskip and extracts the executables.
+  **NOTE** Be aware that compilation of comskip generates a bunch of irrelevant warnings.  You can ignore this.
 
 5. Build the postprocessor docker image.  To do this simply run the *build* script found in the postprocessor main directory (*/docker/data/plex/plexpost*).  This creates the docker image that will be used to run the postprocessor.
 
