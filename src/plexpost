@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+use File::Basename;
+
+$qdir="/queue";
+
+$plexfile=$ARGV[0];
+$fn = basename($plexfile);
+$dn = dirname($plexfile);
+$recid = basename($dn);
+
+printf "Processing: %s\n",$fn;
+
+if ($fn =~/^.* - [Ss]\d+[Ee]\d+ - .*\.\S+$/) {
+    ($show,$season,$episode,$descr,$ext)=$fn=~/^(.*) - [Ss](\d+)[Ee](\d+) - (.*)\.(\S+)$/;
+} elsif ($fn =~ /^.* - \d\d\d\d-\d\d-\d\d \d\d \d\d \d\d - Episode \d+-\d+\.\S+$/) {
+    ($show,$season,$episode,$ext)=$fn=~/^(.*) - (\d\d\d\d)-\d\d-\d\d \d\d \d\d \d\d - Episode (\d+-\d+)\.(\S+)$/;
+    ($rectime)=$fn=~/^.* - (\d\d\d\d-\d\d-\d\d \d\d \d\d \d\d) - Episode \d+-\d+\.\S+$/;
+    $descr="Recorded at $rectime";
+} else {
+    $show="Unable to parse!";
+}
+
+$qfile=sprintf "%s/%s.json",$qdir,$recid;
+open(my $FH, ">", $qfile) or die "Could not open queue file: $qfile $!";
+
+$jfmtl='"%s":"%s"';
+$jfmt=$jfmtl . ",";
+print $FH "{";
+printf $FH $jfmt,"Plexfile",$plexfile;
+printf $FH $jfmt,"Dir",$dn;
+printf $FH $jfmt,"File",$fn;
+printf $FH $jfmt,"RecID",$recid;
+printf $FH $jfmt,"Show",$show;
+printf $FH $jfmt,"Season",$season;
+printf $FH $jfmt,"Episode",$episode;
+printf $FH $jfmt,"Desc",$descr;
+printf $FH $jfmtl,"Type",$ext;
+print $FH "}";
+
+close ($FH);

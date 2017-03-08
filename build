@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+_src=$(readlink -f $0) || {
+    echo "Couldn't figure out where we are!"
+    exit
+}
+_srcdir=$(dirname $_src)
+_project=$(basename $_srcdir)
+_vfile="${_srcdir}/.version"
+
+ver=0.01
+if [ ! -z "$1" ];then
+    _ver="$1"
+    [[ $_ver == *"."* ]] || _ver=${_ver}.00
+    _major=$((10#${_ver%%.*}))
+    _minor=$((10#${_ver##*.}))
+    printf -v ver "%d.%02d" ${_major} ${_minor}
+elif [ -r "$_vfile" ]; then 
+    _ver=$(<"$_vfile")
+    _major=$((10#${_ver%%.*}))
+    _minor=$((10#${_ver##*.}))
+    typeset -i _minor=$_minor
+    printf -v ver "%d.%02d" ${_major} $((_minor+1)) 
+else
+    ver="0.01"
+fi
+
+echo "Updating version to $ver"
+echo "$ver" > "$_vfile"
+echo docker build -t ${_project}:latest -t ${_project}:${ver} .
+docker build --pull=true -t ${_project}:latest -t ${_project}:${ver} . 2>&1 | tee build.log

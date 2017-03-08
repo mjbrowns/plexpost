@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+do_log() {
+    echo "$(date +%D-%T): $@"
+}
+
+die() {
+    msg=("$@")
+    for line in "${msg[@]}"; do
+        do_log $line
+    done
+    exit 1
+}
+
+alerter() {
+    [ -z "MAILTO" ] && return
+    MSG=$1
+    shift
+    ( echo From:${MAILFROM}
+      echo Subject:PLEXPOST JOB ALERT - ${MSG}
+      echo ""
+      echo "$@"
+      echo ""
+    ) | ssmtp ${MAILTO}
+}
+
+daily_cleanup() {
+    do_log "Running Daily Cleanup"
+    LASTCLEAN="$(date +%D)"
+    find ${QUEUEDIR} -maxdepth 1 -name '*.working' | while read FN; do
+        echo "Stale working queue entry found: $(basename ${FN})"
+        alerter "Stale working queue entry found: $(basename ${FN})" "$(jq . ${FN})"
+    done
+    find ${QUEUEDIR} -maxdepth 1 -mtime +${QUEUEDAYS:-60} -name '*.done' | while read FN; do
+        do_log "Removing ${FN}"
+        [ -f "${FN}" ] && rm "${FN}"
+    done
+    find ${QUEUEDIR} -maxdepth 1 -mtime +${QUEUEDAYS:-60} -name '*.log' | while read FN; do
+        do_log "Removing ${FN}"
+        [ -f "${FN}" ] && rm "${FN}"
+    done
+    find ${QUEUEDIR} -maxdepth 1 -type d -mtime +${QUEUEDAYS:-60} -name 'working-*' | while read DN; do
+        do_log "Removing stale working directory${DN}"
+        [ -d "${DN}" ] && rm -rf "${DN}"
+    done
+    if [ "${TSCLEAN:-0}" = "1" ]; then
+        find ${TVDIR:-/dev/null} -mtime +${TSDAYS:-60} -name '*.mkv-ts' | while read FN; do
+            do_log "Cleaning ${FN}"
+            [ -f "${FN}" ] && rm "${FN}"
+        done
+        find ${MVDIR:-/dev/null} -mtime +${TSDAYS:-60} -name '*.mkv-ts' | while read FN; do
+            do_log "Cleaning ${FN}"
+            [ -f "${FN}" ] && rm "${FN}"
+        done
+    fi
+}
+
+[ -d /${QUEUEDIR} ] || die "Error! Couldn't find queue directory!"
+
+FINISHED=""
+
+trap "FINISHED=YES" SIGINT SIGTERM SIGHUP
+
+do_log "Starting to monitor Queue"
+
+while [ -z "$FINISHED" ]; do
+    [ "${LASTCLEAN:-00/00/00}" != "$(date +%D)" ] && daily_cleanup
+    find ${QUEUEDIR} -maxdepth 1 -name '*.json' | while read FN; do
+        _qt=$(basename ${FN})
+        _qe=${_qt%.json}
+        _tf=${QUEUEDIR}/${_qe}.log
+        _te=${QUEUEDIR}/${_qe}.err
+        jq . ${FN} 2>&1 > ${_tf}
+        (/usr/local/bin/plexprocess $_qe || touch ${_te}) | tee -a ${_tf}
+        if [ -f "${_te}" ];then
+            alerter "Error Processing ${_qe}" "$(cat ${_tf})"
+            rm "${_te}"
+        else
+            rm "${_tf}"
+        fi
+    done
+    sleep ${QUEUETIMER:-10}
+done
+
+do_log "Queue monitoring terminated."

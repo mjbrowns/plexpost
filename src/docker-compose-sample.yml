@@ -1,0 +1,66 @@
+version: '2'
+services:
+  plex:
+    container_name: plex
+    image: plexinc/pms-docker:plexpass
+    restart: unless-stopped
+    ports:
+      - 32400:32400/tcp
+      - 3005:3005/tcp
+      - 8324:8324/tcp
+      - 32469:32469/tcp
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+    environment:
+      - TZ=America/New_York
+      - PLEX_CLAIM=
+      - ADVERTISE_IP=http://192.168.15.25:32400/
+      - PLEX_UID=113
+      - PLEX_GID=123
+      - ALLOWED_NETWORKS=192.168.15.0/24
+    hostname: plexserver
+    volumes:
+      - ./data:/config
+      - ./data/transcode-temp:/transcode
+      - /media/tv:/data/tv
+      - /media/movies:/data/movies
+      - /media/home-video:/data/home-video
+      - /media/music:/data/music
+      - /media/pictures:/data/pictures
+      - queue:/queue
+      - ./plexpost/src/plexpost:/usr/local/bin/plexpost:ro
+    tty: true
+    stdin_open: true
+    network_mode: "bridge"
+  plexpost:
+    container_name: plexpost
+    image: plexpost:latest
+    hostname: plexpost
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+      - COMSKIP_USER=plex
+      - COMSKIP_GROUP=plex
+      - COMSKIP_UID=113
+      - COMSKIP_GID=123
+      - TVDIR=/media/tv
+      - MVDIR=/media/movies
+      - QUEUETIMER=10
+      - COMCUT=1
+      - REMOVETS=0
+      - MAILTO=email@mydomain.com
+      - MAILDOMAIN=server.mydomain.com
+      - MAILHUB=server.mydomain.com
+      - MAILFROM=plexpost@server.mydomain.com
+    volumes:
+      - /media/tv:/media/tv
+      - /media/movies:/media/movies
+      - queue:/queue
+    tty: true
+    stdin_open: true
+    network_mode: "bridge"
+
+volumes:
+  queue:

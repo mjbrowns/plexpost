@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list;cat /etc/apt/sources.list
+apt-get update && apt-get -y dist-upgrade
+apt-get install -y build-essential git libargtable2-dev ffmpeg libsdl1.2-dev autoconf libtool libavutil-dev libavformat-dev libavcodec-dev 
+git clone https://github.com/erikkaashoek/Comskip /comskip
+cd /comskip && ./autogen.sh && ./configure && make && make install

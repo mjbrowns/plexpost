@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+_src=$(readlink -f $0) || {
+    echo "Couldn't figure out where we are!"
+    exit
+}
+_srcdir=$(dirname $_src)
+_project=$(basename $_srcdir)
+echo "Testing Project: ${_project}"
+docker run --rm -it -v /media:/media -v plex_queue:/queue -v $PWD/src/:/src --name ${_project}-test ${_project} $*

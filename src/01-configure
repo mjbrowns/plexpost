@@ -1,0 +1,62 @@
+#!/usr/bin/with-contenv bash
+
+#expected variables
+#COMSKIP_UID 
+#COMSKIP_GID 
+#COMSKIP_USER
+#COMSKIP_GROUP
+#QUEUEDIR
+
+die() {
+    msg=("$@")
+    for line in "${msg[@]}"; do
+        echo $line
+    done
+    exit 1
+}
+
+[ -z "$COMSKIP_USER" ] && die "Error! Comskip account username not specified!"
+[ -z "$COMSKIP_GROUP" ] && die "Error! Comskip group name not specified!"
+[ -z "$COMSKIP_UID" ]  && die "Error! Comskip account UID not specified!"
+[ -z "$COMSKIP_GID" ]  && die "Error! Comskip account GID not specified!"
+[ -z "$QUEUEDIR" ]  && die "Error! Queue directory not specified!"
+
+[ -d "$QUEUEDIR" ] || die "Error! Queue directory not found!"
+
+if grep -q "^${COMSKIP_GROUP}:" /etc/group; then
+    groupmod -g ${COMSKIP_GID} ${COMSKIP_GROUP}
+else
+    groupadd -g ${COMSKIP_GID} ${COMSKIP_GROUP}
+fi
+
+if grep -q "^${COMSKIP_USER}:" /etc/passwd;then
+    usermod -d ${QUEUEDIR} -u ${COMSKIP_UID} -g ${COMSKIP_GID} ${COMSKIP_USER}
+else
+    useradd -d ${QUEUEDIR} -M -u ${COMSKIP_UID} -g ${COMSKIP_GID} ${COMSKIP_USER}
+fi
+
+if [ -f /usr/local/etc/comskip.ini ]; then
+    chmod 644 /usr/local/etc/comskip.ini
+fi
+
+if [ -d /${QUEUEDIR} ]; then 
+    chown -R ${COMSKIP_USER}:${COMSKIP_GROUP} /${QUEUEDIR}
+    chmod -R 0644  /${QUEUEDIR}
+    chmod 0755 /${QUEUEDIR}
+    find /${QUEUEDIR}/ -type d -exec chmod 0755 {} \;
+else
+    die "Error, could not find ${QUEUEDIR} directory!"
+fi
+
+[ -f /etc/ssmtp/ssmtp.conf ] && mv /etc/ssmtp/ssmtp.conf{,.sav}
+[ ! -d /etc/ssmtp ] && mkdir -p /etc/ssmtp
+
+if [ ! -z "$MAILTO" ]; then
+    [ -z "$MAILHUB" ] && die "MAILTO specified but MAILHUB is blank!"
+    [ -z "$MAILDOMAIN" ] && die "MAILTO specified but MAILDOMAIN is blank!"
+    [ -z "$MAILFROM" ] && die "MAILTO specified but MAILFROM is blank!"
+    echo "root=${MAILTO}" > /etc/ssmtp/ssmtp.conf
+    echo "mailhub=${MAILHUB}" >> /etc/ssmtp/ssmtp.conf
+    echo "rewriteDomain=${MAILDOMAIN}" >> /etc/ssmtp/ssmtp.conf
+    echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
+fi 

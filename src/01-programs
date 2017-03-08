@@ -1,0 +1,3 @@
+/usr/local/bin/ true root 0755 0755
+/usr/local/etc/ true root 0644 0645
+/etc/services.d/queueman.run false root 0755 0755
