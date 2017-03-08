@@ -75,4 +75,31 @@ Setup is fairly simple.  After installing the latest version of docker-ce, you w
 
   /usr/local/bin/plexpost
 
+  * **NOTE** Do not configure plex to automatically transcode.  The postprocessor will handle that, and it expects only .ts source files.
+
 # docker-compose.yml Configuration
+
+This section describes configuration settings that are specific to my implementation of plex and the plexpost containers.  For more information refer to the [docker-compose documentation](https://docs.docker.com/compose/compose-file/compose-file-v2/)
+
+For more information on the *plexpost* image environment variables, see the comments in the *Dockerfile*
+
+1. Plex container section
+  * The port mappings should probably all stay the same.  
+  * Make sure PLEX_UID and PLEX_GID are set to something useful.  Make sure that those UID/GID own or have access to the media directory structures mapped under volumes.
+  * The standard plex:plexpass image created its own network, so here I force it to mine, which I called bridge.  You can map this however you want.  I map the plexpost container to the same network but it really isn't that necessary as the plexpost container doesn't even need the network.
+2. Plexpost container section.
+  * If you use a different subdirectory name other than *plexpost* you will need to update the image name here accordingly.  You can also change the container name to match, though that's optional.  Hostname is immaterial but should match what you set in the **MAIL** environment settings.
+  * **COMSKIP** environment.  These must be set to match what the *Plex* container uses.
+  * **TVDIR** and **MVDIR** These must point to the location in the container where the postprocessor can find your media libraries.
+  * **QUEUEDIR** Don't mess with this or your processor won't find the queue entries
+  * **QUEUETIMER** Set this to how many seconds should elapse between queue scans by the postprocessor.
+  * **COMCUT** if set to 0 (*default*) the postprocessor will:
+    * Convert the recorded ts file to an mkv file with chapter marks around detected commercials.
+    * Transcode the result into h.264 and put the result into the plex library with the original name but an extension of .mkv
+  If set to 1, the postprocessor will:
+    * Convert the original .ts file to .mkv and add chapter marks.  The resulting file will be in the plex library with an extension of .mkv-ts so that Plex doesn't see the file.  Its there for safekeeping.
+    * Cut the commercials out of the file
+    * Transcode the result into h.264 and put the result into the plex library with the original name but an extension of .mkv
+  * **REMOVETS** If this is set to 1, it will immediately delete the .mkv-ts file!  If set to 0 it leaves it alone
+  * **TSCLEAN** Default is 1.  If enabled, once per day the queue manager will scan the media libraries for .mkv-ts files, and if they are older than **TSDAYS** it will delete them.  The point here is to make sure you have the original recording around for a while in case automated commercial removal makes a mess of things.
+  * **MAIL** settings.  See the examples in the docker-compose.yml.  Fairly self explanatory and very easy to use if you have an outbound relay set up on your network, or an ISP that is permissive to their subscribers without auth.  Basically if MAILTO is set it will send an email to alert you if anything goes wrong during post-processing.
