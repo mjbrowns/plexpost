@@ -36,7 +36,7 @@ The postprocessing script, run after every recording, will create an entry in th
 In addition to the official plex:plexpass docker image, i'm leveraging components from other contributors.  Many thanks to these for the fantastic work they have done, without which this project would not have happened.
 * comskip by [**Erik Kaashoek**](http://github.com/erikkaashoek/Comskip)
 * The comchap/comcut scripts by [**Brett Sheleski**](http://github.com/BrettSheleski/comchap)
-* [**HandBrake **](https://handbrake.fr/)
+* The Famous [**HandBrake**](https://handbrake.fr/)
 
 # Setup
 Setup is fairly simple.  After installing the latest version of docker-ce, you will have both docker and docker-compose available.
