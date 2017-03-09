@@ -1,12 +1,5 @@
 #!/usr/bin/with-contenv bash
 
-#expected variables
-#COMSKIP_UID 
-#COMSKIP_GID 
-#COMSKIP_USER
-#COMSKIP_GROUP
-#QUEUEDIR
-
 die() {
     msg=("$@")
     for line in "${msg[@]}"; do
@@ -19,9 +12,15 @@ die() {
 [ -z "$COMSKIP_GROUP" ] && die "Error! Comskip group name not specified!"
 [ -z "$COMSKIP_UID" ]  && die "Error! Comskip account UID not specified!"
 [ -z "$COMSKIP_GID" ]  && die "Error! Comskip account GID not specified!"
-[ -z "$QUEUEDIR" ]  && die "Error! Queue directory not specified!"
+[ -z "$POSTDATA" ]  && die "Error! postdata directory not specified!"
+[ -z "$QUEUEDIR" ]  && die "Error! postdata directory not specified!"
 
-[ -d "$QUEUEDIR" ] || die "Error! Queue directory not found!"
+[ -d "$POSTDATA" ] || die "Error! Queue root directory not found!"
+[ -d "${QUEUEDIR}" ] || mkdir -p "${QUEUEDIR}" || die "Error! Couldn't create queue directory"
+[ -d "${POSTDATA}/bin" ] || mkdir -p "${POSTDATA}/bin" || die "Error! Couldn't create queue bin directory"
+
+cp /usr/local/bin/plexpost ${POSTDATA}/bin/plexpost
+chmod 755 ${POSTDATA}/bin/plexpost
 
 if grep -q "^${COMSKIP_GROUP}:" /etc/group; then
     groupmod -g ${COMSKIP_GID} ${COMSKIP_GROUP}

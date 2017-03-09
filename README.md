@@ -10,6 +10,8 @@ This project leverages docker and docker-compose to create a service of two cont
 1. The standard plexpass container, modified by injecting my postprocessing script (in *src/plexpost*)
 2. My "plexpost" container, which detects new recordings and processes them according to a variety of settings
 
+In time I expect to republish this as an automated build on dockerhub, but for now...
+
 # Directory Hierarchy
 To help you understand the flow, here's a hierarchy of the directory structure used in this project:
 
@@ -26,12 +28,15 @@ To help you understand the flow, here's a hierarchy of the directory structure u
 
 # Workflow
 
-If you are familiar with the docker-compose system (*recommended*), you will see a volume created called "queue".  This volume is mapped by both containers (*plex* and *plexpost*).  The postprocessing script will create an entry in the queue container.  The plexpost container will then detect that the entry is there and it will do its work.
+If you are familiar with the docker-compose system (*[recommended reading](https://docs.docker.com/compose/overview/)*), you will see a volume created called *postdata*.  This volume is mapped by both containers (*plex* and *plexpost*).  When the *plexpost* container starts, it will copy the postprocessing script to a *bin* directory inside the *postdata* volume.  Using the defaults, the *postdata* volume will be mapped/mounted inside both containers at */postdata*.  Thus, the postprocessing script will end up in */postdata/bin/plexpost*.
+
+The postprocessing script, run after every recording, will create an entry in the *postdata* volume.  Using defaults this can be seen from either container at the path */postdata/queue*.  The plexpost container scans the queue folder every QUEUETIMER seconds and launches the actual postprocessing tasks as it finds new jobs.
 
 # Sources
 In addition to the official plex:plexpass docker image, i'm leveraging components from other contributors.  Many thanks to these for the fantastic work they have done, without which this project would not have happened.
 * comskip by [**Erik Kaashoek**](http://github.com/erikkaashoek/Comskip)
-* The comchap/comcut scripts by [**BrettSheleski**](http://github.com/BrettSheleski/comchap)
+* The comchap/comcut scripts by [**Brett Sheleski**](http://github.com/BrettSheleski/comchap)
+* [**HandBrake **](https://handbrake.fr/)
 
 # Setup
 Setup is fairly simple.  After installing the latest version of docker-ce, you will have both docker and docker-compose available.
@@ -41,13 +46,13 @@ Setup is fairly simple.  After installing the latest version of docker-ce, you w
 
     *mv /var/lib/plexmediaserver/Library /docker/data/plex/data*
 
-3. Clone this git repo into a subdirectory named *plexpost* or whatever you want the prostprocessing container to be named.  The build script will name the container it builds using the name of this directory.  In my example: 
+3. Clone this git repo into a subdirectory named *plexpost* or whatever you want the prostprocessing container to be named.  The build script will name the container it builds using the name of this directory.  In my example:
 
     *git clone https://github.com/mjbrowns/plexpost /docker/data/plex/plexpost*
-    
+
     The build script will then name the postprocessing container *plexpost*
-    
-4. Update the source directory.  
+
+4. Update the source directory.
 
   To do the update, simply execute the *update* script found in the *src* subdirectory (*/docker/data/plex/plexpost/src*).  It does the following things:
   * grabs the comchap and comcut scripts from github and puts them in the *comchap* subdirectory of *src*
@@ -62,7 +67,7 @@ Setup is fairly simple.  After installing the latest version of docker-ce, you w
 
   cd */docker/data/plex*
   docker-compose up -d
-  
+
 8. Check the logs
   * For plex logs, *docker logs*
   * You can also use native docker commands to see the logs of each container:
@@ -74,9 +79,9 @@ Setup is fairly simple.  After installing the latest version of docker-ce, you w
   * [Plex DVR BETA Forum](https://forums.plex.tv/categories/dvr-beta)
   * Configure the postprocess script in the Plex DVR settings.  You must set the postprocess script to:
 
-  /usr/local/bin/plexpost
+    **/postdata/bin/plexpost**
 
-  * **NOTE** Do not configure plex to automatically transcode.  The postprocessor will handle that, and it expects only .ts source files.
+  **NOTE** Do not configure plex to automatically transcode.  The postprocessor will handle that, and it expects only .ts source files.
 
 # docker-compose.yml Configuration
 
@@ -85,14 +90,18 @@ This section describes configuration settings that are specific to my implementa
 For more information on the *plexpost* image environment variables, see the comments in the *Dockerfile*
 
 1. Plex container section
-  * The port mappings should probably all stay the same.  
+  * The port mappings should probably all stay the same.
   * Make sure PLEX_UID and PLEX_GID are set to something useful.  Make sure that those UID/GID own or have access to the media directory structures mapped under volumes.
   * The standard plex:plexpass image created its own network, so here I force it to mine, which I called bridge.  You can map this however you want.  I map the plexpost container to the same network but it really isn't that necessary as the plexpost container doesn't even need the network.
+  * Basically the only real change we introduce to the standard *plex* container configuration is addition of the volume entry:
+
+    \- *postdata:/postdata*
+
+    Which is what makes sure our *postdata* volume gets mounted into the plex conatiner.
 2. Plexpost container section.
   * If you use a different subdirectory name other than *plexpost* you will need to update the image name here accordingly.  You can also change the container name to match, though that's optional.  Hostname is immaterial but should match what you set in the **MAIL** environment settings.
-  * **COMSKIP** environment.  These must be set to match what the *Plex* container uses.
+  * **COMSKIP_\* ** variables.  These must be set to match what the *Plex* container uses for its **PLEX_\* ** variables.
   * **TVDIR** and **MVDIR** These must point to the location in the container where the postprocessor can find your media libraries.
-  * **QUEUEDIR** Don't mess with this or your processor won't find the queue entries
   * **QUEUETIMER** Set this to how many seconds should elapse between queue scans by the postprocessor.
   * **COMCUT** if set to 0 (*default*) the postprocessor will:
     * Convert the recorded ts file to an mkv file with chapter marks around detected commercials.

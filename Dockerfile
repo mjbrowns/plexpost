@@ -24,7 +24,8 @@ ENV TVDIR=media/tv MVDIR=/media/movies
 # QUEUETIMER tells the manager how long to sleep between each scan of the queue
 # QUEUEDAYS tells the manager how long to keep completed queue entries.  
 # Note that if errors are detected, the queue is stored in a .save file and never deleted, nor is its workspace tree under the QUEUEDIR
-ENV QUEUEDIR=/queue QUEUETIMER=60 QUEUEDAYS=60  
+ENV POSTDATA=/postdata 
+ENV QUEUEDIR=${POSTDATA}/queue QUEUETIMER=60 QUEUEDAYS=60  
 # COMCUT=1 uses the comcut processor; COMCUT=0 uses the comchap processor
 # REMOVETS=1 tells the processor to remove the .ts source files upon successful transcodes.  
 # REMOVETS=0 tells the processor to rename the .ts source files to .ts-sav
@@ -38,7 +39,7 @@ ENV MAILTO="" MAILDOMAIN="" MAILHUB="" MAILFROM=""
 
 ADD ./src/01-configure /etc/cont-init.d/
 ADD ./src/01-programs /etc/fix-attrs.d/
-ADD ./src/comskip/comskip ./src/comchap/comcut ./src/comchap/comchap ./src/plexprocess ./src/queueman /usr/local/bin/
+ADD ./src/comskip/comskip ./src/comchap/comcut ./src/comchap/comchap ./src/plexprocess ./src/plexpost ./src/queueman /usr/local/bin/
 ADD ./src/comskip.ini /usr/local/etc/
 ADD ./src/queueman.run /etc/services.d/queueman/run
 

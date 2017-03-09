@@ -29,17 +29,14 @@ hbcli () {
 }
 
 QE=$1
-QF=${QUEUEDIR}/${QE}.json
+QF=${QUEUEDIR}/${QE}.job
 QFD=${QUEUEDIR}/${QE}.working
 QFS=${QUEUEDIR}/${QE}.save
 
-SRCFN=$(jq -r .File ${QF})
-SRCEXT=$(jq -r .Type ${QF})
-SRCFNB="${SRCFN%.${SRCEXT}}"
-SHOWNAME=$(jq -r .Show ${QF})
-SEASON=$(jq -r .Season ${QF})
-EPISODE=$(jq -r .Episode ${QF})
-SHOWDESC=$(jq -r .Desc ${QF})
+SRCFN=$(< ${QF})
+SRCEXT=${SRCFN##*.}
+SRCFNB=${SRCFN%.*}
+
 do_log "Processing ${SRCFNB}"
 
 # See if we can find the file in the TVDIR or MVDIR path

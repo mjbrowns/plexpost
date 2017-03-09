@@ -29,8 +29,7 @@ services:
       - /media/home-video:/data/home-video
       - /media/music:/data/music
       - /media/pictures:/data/pictures
-      - queue:/queue
-      - ./plexpost/src/plexpost:/usr/local/bin/plexpost:ro
+      - postdata:/postdata
     tty: true
     stdin_open: true
     network_mode: "bridge"
@@ -57,10 +56,10 @@ services:
     volumes:
       - /media/tv:/media/tv
       - /media/movies:/media/movies
-      - queue:/queue
+      - postdata:/postdata
     tty: true
     stdin_open: true
-    network_mode: "bridge"
+    network_mode: "none"
 
 volumes:
-  queue:
+  postdata:
