@@ -100,7 +100,7 @@ For more information on the *plexpost* image environment variables, see the comm
     Which is what makes sure our *postdata* volume gets mounted into the plex conatiner.
 2. Plexpost container section.
   * If you use a different subdirectory name other than *plexpost* you will need to update the image name here accordingly.  You can also change the container name to match, though that's optional.  Hostname is immaterial but should match what you set in the **MAIL** environment settings.
-  * **COMSKIP_\* ** variables.  These must be set to match what the *Plex* container uses for its **PLEX_\* ** variables.
+  * **COMSKIP_*** variables.  These must be set to match what the *Plex* container uses for its **PLEX_\* ** variables.
   * **TVDIR** and **MVDIR** These must point to the location in the container where the postprocessor can find your media libraries.
   * **QUEUETIMER** Set this to how many seconds should elapse between queue scans by the postprocessor.
   * **COMCUT** if set to 0 (*default*) the postprocessor will:
