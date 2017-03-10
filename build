@@ -5,7 +5,7 @@ _src=$(readlink -f $0) || {
     exit
 }
 _srcdir=$(dirname $_src)
-_project=$(basename $_srcdir)
+_project="$(whoami)/$(basename $_srcdir)"
 _vfile="${_srcdir}/.version"
 
 ver=0.01

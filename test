@@ -4,6 +4,6 @@ _src=$(readlink -f $0) || {
     exit
 }
 _srcdir=$(dirname $_src)
-_project=$(basename $_srcdir)
+_project="$(whoami)/$(basename $_srcdir)"
 echo "Testing Project: ${_project}"
-docker run --rm -it -v /media:/media -v plex_queue:/queue -v $PWD/src/:/src --name ${_project}-test ${_project} $*
+docker run --rm -it -v /media:/media -v plex_postdata:/postdata -v $PWD/src/:/src --name ${_project}-test ${_project} $*

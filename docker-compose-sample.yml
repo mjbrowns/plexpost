@@ -24,18 +24,18 @@ services:
     volumes:
       - ./data:/config
       - ./data/transcode-temp:/transcode
-      - /media/tv:/data/tv
-      - /media/movies:/data/movies
-      - /media/home-video:/data/home-video
-      - /media/music:/data/music
-      - /media/pictures:/data/pictures
+      - ./data/tv:/data/tv
+      - ./data/movies:/data/movies
+      - ./data/home-video:/data/home-video
+      - ./data/music:/data/music
+      - ./data/pictures:/data/pictures
       - postdata:/postdata
     tty: true
     stdin_open: true
     network_mode: "bridge"
   plexpost:
     container_name: plexpost
-    image: plexpost:latest
+    image: mbrown/plexpost:latest
     hostname: plexpost
     restart: unless-stopped
     environment:
@@ -54,8 +54,8 @@ services:
       - MAILHUB=server.mydomain.com
       - MAILFROM=plexpost@server.mydomain.com
     volumes:
-      - /media/tv:/media/tv
-      - /media/movies:/media/movies
+      - ./data/tv:/media/tv
+      - ./data/movies:/media/movies
       - postdata:/postdata
     tty: true
     stdin_open: true

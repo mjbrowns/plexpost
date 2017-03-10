@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+ME=$(readlink -f $0)
+BASE=$(dirname $ME)
+SRCBIN=${BASE}/src/usr/local/bin
+SCRIPT=/tmp/buildscript.$$
+
+comskip_build_script() {
+cat <<EOD
+#!/usr/bin/env bash
+sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list;cat /etc/apt/sources.list
+apt-get update && apt-get -y dist-upgrade
+apt-get install -y build-essential git libargtable2-dev ffmpeg libsdl1.2-dev autoconf libtool libavutil-dev libavformat-dev libavcodec-dev 
+git clone https://github.com/erikkaashoek/Comskip /comskip
+cd /comskip && ./autogen.sh && ./configure && make && make install
+EOD
+}
+
+if [ ! -d ${SRCBIN} ]; then
+    mkdir -p ${SRCBIN} || {
+        echo "Error creating source bin directory: ${SRCBIN}"
+        exit
+    }
+fi
+
+echo Updating comchap
+curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comchap > ${SRCBIN}/comchap
+curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comcut > ${SRCBIN}/comcut
+chmod 755 ${SRCBIN}/comchap
+chmod 755 ${SRCBIN}/comcut
+
+echo Updating comskip
+[ -f ${SRCBIN}/comskip ] && mv ${SRCBIN}/comskip{,.sav}
+[ -f ${SRCBIN}/comskip-gui ] && mv ${SRCBIN}/comskip-gui{,.sav}
+comskip_build_script > ${SCRIPT}
+chmod 755 ${SCRIPT}
+docker run --rm --name build-comskip -it -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin ubuntu:latest bash -c /buildscript | tee ${BASE}/build.log
+[ -f ${SCRIPT} ] && rm ${SCRIPT}
