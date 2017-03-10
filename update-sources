@@ -7,11 +7,18 @@ SCRIPT=/tmp/buildscript.$$
 comskip_build_script() {
 cat <<EOD
 #!/usr/bin/env bash
-sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list;cat /etc/apt/sources.list
-apt-get update && apt-get -y dist-upgrade
-apt-get install -y build-essential git libargtable2-dev ffmpeg libsdl1.2-dev autoconf libtool libavutil-dev libavformat-dev libavcodec-dev 
+sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list
+echo Updating build environment
+apt-get -qq update && apt-get -qq -y dist-upgrade
+echo Installing development packages
+apt-get -qq -y install build-essential git libargtable2-dev ffmpeg libsdl1.2-dev autoconf libtool libavutil-dev libavformat-dev libavcodec-dev 
+echo Cloning comskip git repo
 git clone https://github.com/erikkaashoek/Comskip /comskip
 cd /comskip && ./autogen.sh && ./configure && make && make install
+chmod 755 /usr/local/bin/comskip
+chmod 755 /usr/local/bin/comskip-gui
+chown $(id -u):$(id -g) /usr/local/bin/comskip
+chown $(id -u):$(id -g) /usr/local/bin/comskip-gui
 EOD
 }
 
@@ -35,3 +42,6 @@ comskip_build_script > ${SCRIPT}
 chmod 755 ${SCRIPT}
 docker run --rm --name build-comskip -it -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin ubuntu:latest bash -c /buildscript | tee ${BASE}/build.log
 [ -f ${SCRIPT} ] && rm ${SCRIPT}
+
+chmod -R 0755 ${BASE}/src
+chmod 0644 ${BASE}/src/usr/local/etc/* 

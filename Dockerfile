@@ -6,7 +6,7 @@ RUN ( \
     sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list; \
     apt-get -qq update && apt-get -qq -y dist-upgrade; \
     echo "Installing prerequisites"; \
-    apt-get install -qq -y ffmpeg libargtable2-0 jq ssmtp curl; \
+    apt-get -qq -y install ffmpeg libargtable2-0 jq ssmtp curl; \
     echo "deb http://ppa.launchpad.net/stebbins/handbrake-releases/ubuntu ${DISTRIB_CODENAME} main" > /etc/apt/sources.list.d/handbrake.list; \
     echo "deb-src http://ppa.launchpad.net/stebbins/handbrake-releases/ubuntu ${DISTRIB_CODENAME} main" >> /etc/apt/sources.list.d/handbrake.list; \
     curl -s "http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x8771ADB0816950D8" | apt-key add -; \
@@ -38,7 +38,7 @@ ENV TZ=America/New_York \
     COMSKIP_GID=123 \
     COMSKIP_USER=plex \
     COMSKIP_GROUP=plex \
-    TVDIR=media/tv \ 
+    TVDIR=/media/tv \ 
     MVDIR=/media/movies \
     POSTDATA=/postdata \
     QUEUEDIR=/postdata/queue \
