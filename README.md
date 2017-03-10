@@ -36,7 +36,7 @@ The postprocessing script, run after every recording, will create an entry in th
 
 # Sources
 In addition to the official plex:plexpass docker image, i'm leveraging components from other contributors.  Many thanks to these for the fantastic work they have done, without which this project would not have happened.
-* comskip by [**Erik Kaashoek**](http://github.com/erikkaashoek/Comskip)
+* comskip by [**Erik Kaashoek**](http://github.com/erikkaashoek/Comskip).  [**Donations Recommended**](http://www.comskip.org)
 * The comchap/comcut scripts by [**Brett Sheleski**](http://github.com/BrettSheleski/comchap)
 * The Famous [**HandBrake**](https://handbrake.fr/)
 
