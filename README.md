@@ -10,7 +10,9 @@ This project leverages docker and docker-compose to create a service of two cont
 1. The standard plexpass container, modified by injecting my postprocessing script (in *src/plexpost*)
 2. My "plexpost" container, which detects new recordings and processes them according to a variety of settings
 
-In time I expect to republish this as an automated build on dockerhub, but for now...
+This is now published as a built container now on dockerhub.  See [**here**](http://dockerhub/r/mbrown/plexpost).
+
+If you want to pull the sources from here and build it yourself, here's a bit of information.
 
 # Directory Hierarchy
 To help you understand the flow, here's a hierarchy of the directory structure used in this project:
