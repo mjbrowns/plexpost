@@ -59,7 +59,7 @@ services:
       - postdata:/postdata
     tty: true
     stdin_open: true
-    network_mode: "none"
+    network_mode: "bridge"
 
 volumes:
   postdata:
