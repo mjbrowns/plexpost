@@ -6,7 +6,7 @@ RUN ( \
     sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list; \
     apt-get -qq update && apt-get -qq -y dist-upgrade; \
     echo "Installing prerequisites"; \
-    apt-get -qq -y install ffmpeg libargtable2-0 jq ssmtp curl; \
+    apt-get -qq -y install ffmpeg libargtable2-0 jq ssmtp jshon curl; \
     echo "deb http://ppa.launchpad.net/stebbins/handbrake-releases/ubuntu ${DISTRIB_CODENAME} main" > /etc/apt/sources.list.d/handbrake.list; \
     echo "deb-src http://ppa.launchpad.net/stebbins/handbrake-releases/ubuntu ${DISTRIB_CODENAME} main" >> /etc/apt/sources.list.d/handbrake.list; \
     curl -s "http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x8771ADB0816950D8" | apt-key add -; \
@@ -33,6 +33,7 @@ VOLUME /postdata
 # MAILDOMAIN - sets the domain name for from address rewriting
 # MAILHUB - name/ip address of mail relay.  This must be a relay server; does not support auth.
 # MAILFROM - sets email address that emails from this process should use
+# SLACK_HOOK - sets SLACK channel webhook for notifications
 ENV TZ=America/New_York \
     COMSKIP_UID=113 \
     COMSKIP_GID=123 \
@@ -51,7 +52,8 @@ ENV TZ=America/New_York \
     MAILTO="" \
     MAILDOMAIN="" \
     MAILHUB="" \
-    MAILFROM="" 
+    MAILFROM="" \
+    SLACK_HOOK=""
 
 ADD ./src /
 #ADD ./src/01-configure /etc/cont-init.d/

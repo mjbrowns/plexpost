@@ -12,16 +12,42 @@ die() {
     exit 1
 }
 
+slack_payload() {
+    FROM="$1"
+    ICON="$2"
+    ATTACH=$3
+    TITLE=$4
+    shift 4
+    STR=""
+    for i in "$@"; do
+        printf -v STR "%s\n%s" "${STR}" "${i}"
+    done
+    if [ "${ICON:0:1}" = ":" ]; then
+        ICON_TYPE="icon_emoji"
+    else
+        ICON_TYPE="icon_url"
+    fi
+    jshon -Q -n {} -s "$FROM" -i "username" -s "$ICON" -i $ICON_TYPE -s "$STR" -i text -n [] -n {} -s "$TITLE" -i title -s "$(<$ATTACH)" -i text -i 0 -i attachments
+}
+
 alerter() {
-    [ -z "MAILTO" ] && return
     MSG=$1
-    shift
-    ( echo From:${MAILFROM}
-      echo Subject:PLEXPOST JOB ALERT - ${MSG}
-      echo ""
-      echo "$@"
-      echo ""
-    ) | ssmtp ${MAILTO}
+    LOG=$2
+    TITLE=$3
+    shift 3
+    [ ! -z "$MAILTO" ] && {
+        ( echo From:${MAILFROM}
+        echo Subject:PLEXPOST JOB ALERT - ${MSG}
+        echo ""
+        echo "$TITLE"
+        echo ""
+        [ -f "$LOG" ] && cat "$LOG"
+        ) | ssmtp ${MAILTO}
+    }
+    [ ! -z "$SLACK_HOOK" ] && {
+        PAYLOAD=$(slack_payload "plexpost" ":warning:" "$LOG" "$TITLE" "JOB ALERT" "$MSG") 
+        curl -X POST --data-urlencode "payload=$PAYLOAD" $SLACK_HOOK
+    }
 }
 
 daily_cleanup() {
@@ -29,7 +55,7 @@ daily_cleanup() {
     LASTCLEAN="$(date +%D)"
     find ${QUEUEDIR} -maxdepth 1 -name '*.working' | while read FN; do
         echo "Stale working queue entry found: $(basename ${FN})"
-        alerter "Stale working queue entry found: $(basename ${FN})" "$(< ${FN})"
+        alerter "Stale working queue entry found: $(basename ${FN})" "${FN}" "Queue Entry"
     done
     find ${QUEUEDIR} -maxdepth 1 -mtime +${QUEUEDAYS:-60} -name '*.done' | while read FN; do
         do_log "Removing ${FN}"
@@ -73,7 +99,7 @@ while [ -z "$FINISHED" ]; do
         cat ${FN} > ${_tf}
         (/usr/local/bin/plexprocess $_qe || touch ${_te}) | tee -a ${_tf}
         if [ -f "${_te}" ];then
-            alerter "Error Processing ${_qe}" "$(cat ${_tf})"
+            alerter "Error Processing ${_qe}" "${_tf}" "Log File"
             rm "${_te}"
         else
             rm "${_tf}"
