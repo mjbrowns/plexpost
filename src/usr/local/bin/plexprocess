@@ -78,9 +78,14 @@ fi
 
 # link .ts file to working-dir/source.ts
 ln -sf "${IF}" "${WF1}" || die "ERROR: failed to link ${WF1}"
+
+FFMPEG="ffmpeg -fflags +genpts -analyzeduration 2147483647 -probesize 2147483647"
+COMSKIP="comskip -q -n"
+COMSKIPINI="/usr/local/etc/comskip.ini"
+
 # run comchap on working-dir/source.ts to create working-dir/source.mkv
 do_log "Starting comchap"
-/usr/local/bin/comchap --comskip="comskip -q -n" --keep-edl --comskip-ini=/usr/local/etc/comskip.ini "${WF1}" "${WF2}" > ${WORKDIR}/comchap.log 2>&1 || die "ERROR: comchap exited with error $?"
+/usr/local/bin/comchap --ffmpeg="$FFMPEG" --comskip="$COMSKIP" --keep-edl --comskip-ini="${COMSKIPINI}" "${WF1}" "${WF2}" > ${WORKDIR}/comchap.log 2>&1 || die "ERROR: comchap exited with error $?"
 # move working-dir/source.mkv to target-dir/{FN}.mkv-ts
 mv "${WF2}" "${OFTS}" || die "ERROR: failed copying source mkv to target directory"
 # remove original .ts file and its link working-dir/source.ts
@@ -95,7 +100,7 @@ rm -f "${WF1}"
 if [ "${COMCUT}" = "1" ]; then
     ln -sf "${OFTS}" "${WF2}" || die "ERROR: failed to link ${WF2}"
     do_log "Starting comcut"
-    /usr/local/bin/comcut --comskip="comskip -q -n" --comskip-ini=/usr/local/etc/comskip.ini "${WF2}" "${WF3}" > ${WORKDIR}/comcut.log 2>&1 || die "ERROR: comcut exited with error $?"
+    /usr/local/bin/comcut --ffmpeg="${FFMPEG}" --comskip="${COMSKIP}" --comskip-ini="${COMSKIPINI}" "${WF2}" "${WF3}" > ${WORKDIR}/comcut.log 2>&1 || die "ERROR: comcut exited with error $?"
 else
     ln -sf "${OFTS}" "${WF3}" || die "ERROR: failed to link ${WF3}"
 fi

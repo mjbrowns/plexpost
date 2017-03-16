@@ -14,6 +14,9 @@ This is now published as a built container now on dockerhub.  See [**here**](htt
 
 If you want to pull the sources from here and build it yourself, here's a bit of information.
 
+# Change Log
+The change log can be found in [CHANGES.md](https://github.com/mjbrowns/plexpost/blob/master/CHANGES.md)
+
 # Directory Hierarchy
 To help you understand the flow, here's a hierarchy of the directory structure used in this project:
 
