@@ -38,14 +38,13 @@ SRCEXT=${SRCFN##*.}
 SRCFNB=${SRCFN%.*}
 
 do_log "Processing ${SRCFNB}"
+mv "${QF}" "${QFD}"
 
 # See if we can find the file in the TVDIR or MVDIR path
 SRCDIR=$(find ${TVDIR} ${MVDIR} -name "${SRCFN}" -printf "%h\n")
-_check=$(echo "$SRCDIR"|wc -l)
+_check=$(find ${TVDIR} ${MVDIR} -name "${SRCFN}" -printf "%h\n"|wc -l)
 [ ${_check} -gt 1 ] && die "ERROR: multiple input files found!"
 [ ${_check} -eq 0 ] && die "ERROR: couldn't find input file ($SRCFN) in library!"
-
-mv "${QF}" "${QFD}"
 
 WORKDIR=${QUEUEDIR}/working-${QE}
 mkdir -p ${WORKDIR}

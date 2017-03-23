@@ -24,6 +24,12 @@ if [ ! -d ${SRCBIN} ]; then
     }
 fi
 
+echo Updating slackpost
+SLACKSRC=${HOME}/dev/golang/bin/slackpost
+[ -f ${SRCBIN}/slackpost ] && mv ${SRCBIN}/slackpost{,.sav}
+[ -f ${SLACKSRC} ] && cp ${SLACKSRC} ${SRCBIN}/slackpost
+chmod 755 ${SRCBIN}/slackpost
+
 echo Updating comchap
 curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comchap > ${SRCBIN}/comchap
 curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comcut > ${SRCBIN}/comcut
@@ -35,7 +41,7 @@ echo Updating comskip
 [ -f ${SRCBIN}/comskip-gui ] && mv ${SRCBIN}/comskip-gui{,.sav}
 comskip_build_script > ${SCRIPT}
 chmod 755 ${SCRIPT}
-docker run --rm --name build-comskip -it -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin ubuntu-buildenv:latest bash -c /buildscript | tee ${BASE}/build.log
+docker run --rm --name build-comskip -it -u root -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin mbrown/buildenv:latest bash -c /buildscript | tee ${BASE}/build.log
 [ -f ${SCRIPT} ] && rm ${SCRIPT}
 
 chmod -R 0755 ${BASE}/src
