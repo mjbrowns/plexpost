@@ -1,4 +1,4 @@
 build.log
 .version
 src/usr/local/bin/com*
-src/usr/local/bin/slackpost src/usr/local/bin/slackpost.sav
+src/usr/local/bin/slackpost*
