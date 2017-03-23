@@ -55,12 +55,7 @@ ENV TZ=America/New_York \
     MAILFROM="" \
     SLACK_HOOK=""
 
-ADD ./src /
-#ADD ./src/01-configure /etc/cont-init.d/
-#ADD ./src/01-programs /etc/fix-attrs.d/
-#ADD ./src/comskip/comskip ./src/comchap/comcut ./src/comchap/comchap ./src/plexprocess ./src/plexpost ./src/queueman /usr/local/bin/
-#ADD ./src/comskip.ini /usr/local/etc/
-#ADD ./src/queueman.run /etc/services.d/queueman/run
+ADD ./workdir /
 
 ENTRYPOINT ["/init"]
 CMD []

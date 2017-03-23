@@ -1,24 +1,72 @@
 #!/usr/bin/env bash
 ME=$(readlink -f $0)
 BASE=$(dirname $ME)
-SRCBIN=${BASE}/src/usr/local/bin
-SCRIPT=/tmp/buildscript.$$
+SOURCES=${BASE}/src
+W_BASE=${BASE}/workdir
+W_LOCAL=${W_BASE}/usr/local
+W_SCRIPT=${W_BASE}/buildscript.$$
+BUILDENV=mbrown/buildenv:latest
 
-comskip_build_script() {
-cat <<EOD
+do_buildscript () {
+    NAME=${1:-plexpost}
+    chmod 755 ${W_SCRIPT}
+    docker run --rm \
+        --name build-${NAME} \
+        -it \
+        -u root \
+        -v ${W_SCRIPT}:/buildscript \
+        -v ${W_LOCAL}:/usr/local \
+        -v ${W_BASE}/etc/cont-init.d:/etc/cont-init.d \
+        -v ${W_BASE}/etc/fix-attrs.d:/etc/fix-attrs.d \
+        -v ${W_BASE}/etc/services.d:/etc/services.d \
+        -v ${SOURCES}:/src \
+        ${BUILDENV} bash -c /buildscript | tee ${BASE}/build-${NAME}.log
+    [ -f ${W_SCRIPT} ] && rm ${W_SCRIPT}
+}
+
+echo '####################################################################################################'
+echo '## Preparing Build Environment                                                                    ##'
+echo '####################################################################################################'
+[ -d ${W_BASE} ] && rm -rf ${W_BASE}
+mkdir -p ${W_BASE} && \
+  mkdir -p ${W_LOCAL} && \
+  mkdir -p ${W_BASE}/etc/cont-init.d && \
+  mkdir -p ${W_BASE}/etc/fix-attrs.d && \
+  mkdir -p ${W_BASE}/etc/services.d && \
+  mkdir -p ${W_LOCAL}/bin \
+  || {
+    echo "Error creating working directories"
+    exit
+}
+
+echo '####################################################################################################'
+echo '## Updating comchap                                                                               ##'
+echo '####################################################################################################'
+cat > ${W_SCRIPT} <<EOD
+#!/usr/bin/env bash
+echo Cloning comchap git repo
+[ -f /usr/local/bin/comchap ] && rm /usr/local/bin/comchap
+[ -f /usr/local/bin/comcut ] && rm /usr/local/bin/comcut
+git clone https://github.com/BrettSheleski/comchap /comchap
+cd /comchap && make && make install
+EOD
+do_buildscript comchap
+
+echo '####################################################################################################'
+echo '## Updating comskip                                                                               ##'
+echo '####################################################################################################'
+cat > ${W_SCRIPT} <<EOD 
 #!/usr/bin/env bash
 echo Cloning comskip git repo
 git clone https://github.com/erikkaashoek/Comskip /comskip
 cd /comskip && ./autogen.sh && export CFLAGS=-w && ./configure && make && make install
-chmod 755 /usr/local/bin/comskip
-chmod 755 /usr/local/bin/comskip-gui
-chown $(id -u):$(id -g) /usr/local/bin/comskip
-chown $(id -u):$(id -g) /usr/local/bin/comskip-gui
 EOD
-}
+do_buildscript comchap
 
-slackpost_build_script() {
-cat <<EOD
+echo '####################################################################################################'
+echo '## Updating slackpost                                                                             ##'
+echo '####################################################################################################'
+cat > ${W_SCRIPT} <<EOD
 #!/usr/bin/env bash
 SOURCE=github.com/mjbrowns/slackpost
 echo Building slackpost from \$SOURCE
@@ -27,38 +75,24 @@ export GOPATH=/golang
 go get github.com/mjbrowns/slackpost
 go install github.com/mjbrowns/slackpost
 cp -v \$GOPATH/bin/slackpost /usr/local/bin/slackpost
-chown $(id -u):$(id -g) /usr/local/bin/slackpost
 EOD
-}
+do_buildscript slackpost
 
-if [ ! -d ${SRCBIN} ]; then
-    mkdir -p ${SRCBIN} || {
-        echo "Error creating source bin directory: ${SRCBIN}"
-        exit
-    }
-fi
-
-echo Updating comchap
-curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comchap > ${SRCBIN}/comchap
-curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comcut > ${SRCBIN}/comcut
-chmod 755 ${SRCBIN}/comchap
-chmod 755 ${SRCBIN}/comcut
-
-echo Updating comskip
-[ -f ${SRCBIN}/comskip ] && mv ${SRCBIN}/comskip{,.sav}
-[ -f ${SRCBIN}/comskip-gui ] && mv ${SRCBIN}/comskip-gui{,.sav}
-comskip_build_script > ${SCRIPT}
-chmod 755 ${SCRIPT}
-docker run --rm --name build-comskip -it -u root -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin mbrown/buildenv:latest bash -c /buildscript | tee ${BASE}/build-comskip.log
-[ -f ${SCRIPT} ] && rm ${SCRIPT}
-
-echo Updating slackpost
-[ -f ${SRCBIN}/slackpost ] && mv ${SRCBIN}/slackpost{,.sav}
-slackpost_build_script > ${SCRIPT}
-chmod 755 ${SCRIPT}
-docker run --rm --name build-slackpost -it -u root -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin mbrown/buildenv:latest bash -c /buildscript | tee ${BASE}/build-slackpost.log
-[ -f ${SCRIPT} ] && rm ${SCRIPT}
-
-echo Fixing permissions
-chmod -R 0755 ${BASE}/src
-chmod 0644 ${BASE}/src/usr/local/etc/* 
+echo '####################################################################################################'
+echo '## Loading plexpost components                                                                    ##'
+echo '####################################################################################################'
+cat > ${W_SCRIPT} <<EOD
+mkdir -p /usr/local/etc/
+mkdir -p /etc/services.d/queueman/
+cp -v /src/01-configure /etc/cont-init.d/
+cp -v /src/01-programs  /etc/fix-attrs.d/
+cp -v /src/queueman-run /etc/services.d/queueman/run
+cp -v /src/plexprocess  /usr/local/bin
+cp -v /src/plexpost     /usr/local/bin
+cp -v /src/queueman     /usr/local/bin
+cp -v /src/comskip.ini  /usr/local/etc/
+chown -R $(id -u):$(id -g) /usr/local /etc/cont-init.d /etc/fix-attrs.d /etc/services.d
+chmod 0644 /usr/local/etc/*  /etc/cont-init.d/* /etc/fix-attrs.d/* /etc/services.d/queueman/*
+chmod 0755 /usr/local/bin/*
+EOD
+do_buildscript permissions

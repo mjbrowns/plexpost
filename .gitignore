@@ -1,4 +1,3 @@
 build*.log
 .version
-src/usr/local/bin/com*
-src/usr/local/bin/slackpost*
+workdir
