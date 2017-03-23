@@ -20,13 +20,13 @@ do_buildscript () {
         -v ${W_BASE}/etc/fix-attrs.d:/etc/fix-attrs.d \
         -v ${W_BASE}/etc/services.d:/etc/services.d \
         -v ${SOURCES}:/src \
-        ${BUILDENV} bash -c /buildscript | tee ${BASE}/build-${NAME}.log
+        ${BUILDENV} bash -c /buildscript | tee ${BASE}/logs/build-${NAME}.log
     [ -f ${W_SCRIPT} ] && rm ${W_SCRIPT}
 }
 
-echo '####################################################################################################'
-echo '## Preparing Build Environment                                                                    ##'
-echo '####################################################################################################'
+echo '===================================================================================================='
+echo '== Preparing Build Environment                                                                    =='
+echo '===================================================================================================='
 [ -d ${W_BASE} ] && rm -rf ${W_BASE}
 mkdir -p ${W_BASE} && \
   mkdir -p ${W_LOCAL} && \
@@ -39,9 +39,9 @@ mkdir -p ${W_BASE} && \
     exit
 }
 
-echo '####################################################################################################'
-echo '## Updating comchap                                                                               ##'
-echo '####################################################################################################'
+echo '===================================================================================================='
+echo '== Updating comchap                                                                               =='
+echo '===================================================================================================='
 cat > ${W_SCRIPT} <<EOD
 #!/usr/bin/env bash
 echo Cloning comchap git repo
@@ -52,20 +52,20 @@ cd /comchap && make && make install
 EOD
 do_buildscript comchap
 
-echo '####################################################################################################'
-echo '## Updating comskip                                                                               ##'
-echo '####################################################################################################'
+echo '===================================================================================================='
+echo '== Updating comskip                                                                               =='
+echo '===================================================================================================='
 cat > ${W_SCRIPT} <<EOD 
 #!/usr/bin/env bash
 echo Cloning comskip git repo
 git clone https://github.com/erikkaashoek/Comskip /comskip
 cd /comskip && ./autogen.sh && export CFLAGS=-w && ./configure && make && make install
 EOD
-do_buildscript comchap
+do_buildscript comskip
 
-echo '####################################################################################################'
-echo '## Updating slackpost                                                                             ##'
-echo '####################################################################################################'
+echo '===================================================================================================='
+echo '== Updating slackpost                                                                             =='
+echo '===================================================================================================='
 cat > ${W_SCRIPT} <<EOD
 #!/usr/bin/env bash
 SOURCE=github.com/mjbrowns/slackpost
@@ -78,9 +78,9 @@ cp -v \$GOPATH/bin/slackpost /usr/local/bin/slackpost
 EOD
 do_buildscript slackpost
 
-echo '####################################################################################################'
-echo '## Loading plexpost components                                                                    ##'
-echo '####################################################################################################'
+echo '===================================================================================================='
+echo '== Loading plexpost components                                                                    =='
+echo '===================================================================================================='
 cat > ${W_SCRIPT} <<EOD
 mkdir -p /usr/local/etc/
 mkdir -p /etc/services.d/queueman/
@@ -95,4 +95,4 @@ chown -R $(id -u):$(id -g) /usr/local /etc/cont-init.d /etc/fix-attrs.d /etc/ser
 chmod 0644 /usr/local/etc/*  /etc/cont-init.d/* /etc/fix-attrs.d/* /etc/services.d/queueman/*
 chmod 0755 /usr/local/bin/*
 EOD
-do_buildscript permissions
+do_buildscript plexpost

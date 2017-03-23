@@ -23,6 +23,11 @@ _src=$(readlink -f $0) || {
 _srcdir=$(dirname $_src)
 _project="$(whoami)/$(basename $_srcdir)"
 _vfile="${_srcdir}/.version"
+_logfile=${_srcdir}/logs/build-docker.log
+mkdir -p ${_srcdir}/logs || {
+    echo "Error - couldn't create/access log file directory"
+    exit 1
+}
 
 typeset -u _mode=${1:-n}
 _mode=${_mode:0:1}
@@ -59,9 +64,15 @@ _cmd="docker build --pull=true -t ${_project}:latest -t ${_project}:${_bver}"
 [ "$_mode" == "Y" ] && _cmd="${_cmd} -t ${_project}:${_pver}"
 _cmd="${_cmd} ."
 
-do_cmd "${_cmd}"
+echo '===================================================================================================='
+echo '== Building Docker Image                                                                          =='
+echo '===================================================================================================='
+do_cmd "${_cmd}" |tee ${LOGFILE} 
 
 if [ "$_mode" == "Y" ]; then
+    echo '===================================================================================================='
+    echo '== Pushing Docker Image to DockerHub                                                              =='
+    echo '===================================================================================================='
     do_cmd "docker push ${_project}:${_pver}"
     do_cmd "docker push ${_project}:latest"
 fi
