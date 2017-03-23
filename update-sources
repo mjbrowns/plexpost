@@ -17,18 +17,26 @@ chown $(id -u):$(id -g) /usr/local/bin/comskip-gui
 EOD
 }
 
+slackpost_build_script() {
+cat <<EOD
+#!/usr/bin/env bash
+SOURCE=github.com/mjbrowns/slackpost
+echo Building slackpost from \$SOURCE
+mkdir /golang
+export GOPATH=/golang
+go get github.com/mjbrowns/slackpost
+go install github.com/mjbrowns/slackpost
+cp -v \$GOPATH/bin/slackpost /usr/local/bin/slackpost
+chown $(id -u):$(id -g) /usr/local/bin/slackpost
+EOD
+}
+
 if [ ! -d ${SRCBIN} ]; then
     mkdir -p ${SRCBIN} || {
         echo "Error creating source bin directory: ${SRCBIN}"
         exit
     }
 fi
-
-echo Updating slackpost
-SLACKSRC=${HOME}/dev/golang/bin/slackpost
-[ -f ${SRCBIN}/slackpost ] && mv ${SRCBIN}/slackpost{,.sav}
-[ -f ${SLACKSRC} ] && cp ${SLACKSRC} ${SRCBIN}/slackpost
-chmod 755 ${SRCBIN}/slackpost
 
 echo Updating comchap
 curl https://raw.githubusercontent.com/BrettSheleski/comchap/master/comchap > ${SRCBIN}/comchap
@@ -41,8 +49,16 @@ echo Updating comskip
 [ -f ${SRCBIN}/comskip-gui ] && mv ${SRCBIN}/comskip-gui{,.sav}
 comskip_build_script > ${SCRIPT}
 chmod 755 ${SCRIPT}
-docker run --rm --name build-comskip -it -u root -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin mbrown/buildenv:latest bash -c /buildscript | tee ${BASE}/build.log
+docker run --rm --name build-comskip -it -u root -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin mbrown/buildenv:latest bash -c /buildscript | tee ${BASE}/build-comskip.log
 [ -f ${SCRIPT} ] && rm ${SCRIPT}
 
+echo Updating slackpost
+[ -f ${SRCBIN}/slackpost ] && mv ${SRCBIN}/slackpost{,.sav}
+slackpost_build_script > ${SCRIPT}
+chmod 755 ${SCRIPT}
+docker run --rm --name build-slackpost -it -u root -v ${SCRIPT}:/buildscript -v ${SRCBIN}:/usr/local/bin mbrown/buildenv:latest bash -c /buildscript | tee ${BASE}/build-slackpost.log
+[ -f ${SCRIPT} ] && rm ${SCRIPT}
+
+echo Fixing permissions
 chmod -R 0755 ${BASE}/src
 chmod 0644 ${BASE}/src/usr/local/etc/* 
