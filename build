@@ -27,5 +27,5 @@ fi
 
 echo "Updating version to $ver"
 echo "$ver" > "$_vfile"
-echo docker build -t ${_project}:latest -t ${_project}:${ver} .
-docker build --pull=true -t ${_project}:latest -t ${_project}:${ver} . 2>&1 | tee build.log
+echo docker build -t ${_project}:latest -t ${_project}:B.${ver} .
+docker build --pull=true -t ${_project}:latest -t ${_project}:B.${ver} . 2>&1 | tee build.log
