@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+#
+# $1 = Y/N - defaults to N, if Y will advance the build minor number and push the 
+#            new build to dockerhub.
+#
+# config file ./.version has two versions, the P version and the B version.
+# B version is the build number
+# P version is the production number.
+# 
+# $2 if specified sets the build/production number
+#
+
+do_cmd() {
+    echo "$*"
+    _runcmd="$*"
+    ${_runcmd}
+}
 
 _src=$(readlink -f $0) || {
     echo "Couldn't figure out where we are!"
@@ -8,24 +24,44 @@ _srcdir=$(dirname $_src)
 _project="$(whoami)/$(basename $_srcdir)"
 _vfile="${_srcdir}/.version"
 
-ver=0.01
-if [ ! -z "$1" ];then
-    _ver="$1"
-    [[ $_ver == *"."* ]] || _ver=${_ver}.00
-    _major=$((10#${_ver%%.*}))
-    _minor=$((10#${_ver##*.}))
-    printf -v ver "%d.%02d" ${_major} ${_minor}
-elif [ -r "$_vfile" ]; then 
-    _ver=$(<"$_vfile")
-    _major=$((10#${_ver%%.*}))
-    _minor=$((10#${_ver##*.}))
-    typeset -i _minor=$_minor
-    printf -v ver "%d.%02d" ${_major} $((_minor+1)) 
-else
-    ver="0.01"
-fi
+typeset -u _mode=${1:-n}
+_mode=${_mode:0:1}
 
-echo "Updating version to $ver"
-echo "$ver" > "$_vfile"
-echo docker build -t ${_project}:latest -t ${_project}:B.${ver} .
-docker build --pull=true -t ${_project}:latest -t ${_project}:B.${ver} . 2>&1 | tee build.log
+typeset -l _build=$(echo "obase=16; $(date +%s)"|bc)
+
+# default version is 1.0
+typeset -i _major=0
+typeset -i _minor=1
+# if version file is found then we use the version number found there
+# we parse it to separate the major/minor 
+# if $1 is a yes value then we increment it by one
+if [ -r "$_vfile" ]; then
+    _ver=$(<"$_vfile")
+    typeset -i _major=$((10#${_ver%%.*}))
+    typeset -i _minor=$((10#${_ver##*.}))
+    [ "$_mode" == "Y" ] && _minor=$((_minor+1))
+fi
+# if $2 is specified, we use that as the version number
+# and parse it into major/minor numbers
+if [ ! -z "$2" ]; then
+    _ver="$2"
+    typeset -i _major=$((10#${_ver%%.*}))
+    typeset -i _minor=$((10#${_ver##*.}))
+fi
+# now we convert major/minor to _pver (production version) and _bver (build version)
+printf -v _pver "%d.%02d" ${_major} $((_minor)) 
+printf -v _bver "%d.%02d.%s" ${_major} $((_minor)) ${_build}
+
+echo "Building version $_bver"
+echo "$_pver" > "$_vfile"
+
+_cmd="docker build --pull=true -t ${_project}:latest -t ${_project}:${_bver}"
+[ "$_mode" == "Y" ] && _cmd="${_cmd} -t ${_project}:${_pver}"
+_cmd="${_cmd} ."
+
+do_cmd "${_cmd}"
+
+if [ "$_mode" == "Y" ]; then
+    do_cmd "docker push ${_project}:${_pver}"
+    do_cmd "docker push ${_project}:latest"
+fi
