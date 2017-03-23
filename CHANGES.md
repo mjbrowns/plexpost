@@ -1,3 +1,6 @@
+# Version 1.12
+* reorganized build process. Fixed up some permissions
+
 # Version 1.11
 * switched over to a new tool to send messages to slax
 * fixed a few minor bugs
