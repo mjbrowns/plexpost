@@ -11,6 +11,7 @@ die() {
 }
 
 cleanup() {
+    [ -z "$@" ] || do_log "$@"
     [ -z "${WORKDIR}" ] && return
     [ -d ${WORKDIR} ] && rm -rf ${WORKDIR}
     exit 0
@@ -27,7 +28,7 @@ hbcli () {
         -f mkv --decomb --loose-anamorphic --modulus 2 -m --x264-preset medium --h264-profile high --h264-level 4.1 \
         $*
 }
-
+[ -f ${QUEUEDIR}/.debug ] && set -x
 QE=$1
 QF=${QUEUEDIR}/${QE}.job
 QFD=${QUEUEDIR}/${QE}.working
@@ -48,7 +49,7 @@ _check=$(find ${TVDIR} ${MVDIR} -name "${SRCFN}" -printf "%h\n"|wc -l)
 
 WORKDIR=${QUEUEDIR}/working-${QE}
 mkdir -p ${WORKDIR}
-trap "cleanup" SIGINT SIGTERM SIGHUP
+trap "cleanup Unexpected Error" SIGINT SIGTERM SIGHUP
 cd ${WORKDIR}
 #
 # main processing code below
@@ -62,17 +63,23 @@ WF2="${WORKDIR}/source.mkv"
 WF3="${WORKDIR}/transcode-source.mkv"
 WF4="${WORKDIR}/transcoded.mkv"
 
+if [ "${SRCEXT}" = "mkv" ] ;then
+    IFN2="${SRCFNB}.mkv-orig"
+    IF2="${SRCDIR}/${IFN2}"
+    do_log "Moving source to $IF2"
+    mv "${IF}" "${IF2}"
+    IF="${IF2}"
+    echo "$IFN2" > "${QFD}"
+fi
+
 if [ -z "${IF}" ];then
-    cleanup
-    die "ERROR: Calculated input file is blank"
+    cleanup "ERROR: Calculated input file is blank"
 fi
 if [ -f "${OF}" ];then
-    cleanup
-    die "ERROR: Output file already exists"
+    cleanup "ERROR: Output file already exists"
 fi
 if [ ! -f "${IF}" ];then
-    cleanup
-    die "ERROR: Input file does not exist: ${IF}"
+    cleanup "ERROR: Input file does not exist: ${IF}"
 fi
 
 # link .ts file to working-dir/source.ts
@@ -122,8 +129,7 @@ fi
 # all done
 #
 trap "" SIGINT SIGTERM SIGHUP
-do_log "Success"
 
 mv "${QFD}" "${QFS}"
-cleanup
+cleanup "Success"
 
