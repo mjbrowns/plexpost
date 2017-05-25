@@ -7,14 +7,13 @@ do_log() {
 die() {
     do_log "${@}"
     trap "" SIGINT SIGTERM SIGHUP
+    cleanup
     exit 1
 }
 
 cleanup() {
-    [ -z "$@" ] || do_log "$@"
     [ -z "${WORKDIR}" ] && return
     [ -d ${WORKDIR} ] && rm -rf ${WORKDIR}
-    exit 0
 }
 
 hbcli () {
@@ -49,7 +48,7 @@ _check=$(find ${TVDIR} ${MVDIR} -name "${SRCFN}" -printf "%h\n"|wc -l)
 
 WORKDIR=${QUEUEDIR}/working-${QE}
 mkdir -p ${WORKDIR}
-trap "cleanup Unexpected Error" SIGINT SIGTERM SIGHUP
+trap "die 'Caught signal'" SIGINT SIGTERM SIGHUP
 cd ${WORKDIR}
 #
 # main processing code below
@@ -73,13 +72,13 @@ if [ "${SRCEXT}" = "mkv" ] ;then
 fi
 
 if [ -z "${IF}" ];then
-    cleanup "ERROR: Calculated input file is blank"
+    die "ERROR: Calculated input file is blank"
 fi
 if [ -f "${OF}" ];then
-    cleanup "ERROR: Output file already exists"
+    die "ERROR: Output file already exists"
 fi
 if [ ! -f "${IF}" ];then
-    cleanup "ERROR: Input file does not exist: ${IF}"
+    die "ERROR: Input file does not exist: ${IF}"
 fi
 
 # link .ts file to working-dir/source.ts
@@ -128,8 +127,8 @@ fi
 #
 # all done
 #
+do_log "Success"
 trap "" SIGINT SIGTERM SIGHUP
-
 mv "${QFD}" "${QFS}"
-cleanup "Success"
+cleanup 
 

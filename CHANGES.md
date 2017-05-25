@@ -1,5 +1,10 @@
 # Change Log
 
+## Version 1.14
+* Plex made a permanent change to their DVR process; rather than outputting native streams (usually TS files) they are remuxing all DVR streams to mkv.  This version changes the flow of post processing to handle both TS input files and mkv automatically.
+* Corrected error handling to properly call back to the alerting functions in more scenarios
+* Updates comskip, s6, etc.
+
 ## Version 1.13
 * Updated s6 component
 
