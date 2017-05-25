@@ -1,22 +1,27 @@
 FROM ubuntu:latest
 
-RUN ( \
-    . /etc/lsb-release; \
+RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \
     echo "Updating Base Ubuntu Image"; \
     sed -ie "s'http://archive.ubuntu.com'http://us.archive.ubuntu.com'" /etc/apt/sources.list; \
-    apt-get -qq update && apt-get -qq -y dist-upgrade; \
+    apt-get -qq update && apt-get -qq -y --no-install-recommends install apt-utils && apt-get -qq -y dist-upgrade; \
+    apt-get -qq -y clean ; \
+    )
+RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \
     echo "Installing prerequisites"; \
-    apt-get -qq -y install ffmpeg libargtable2-0 jq ssmtp curl; \
+    apt-get -qq -y --no-install-recommends install ffmpeg libargtable2-0 jq ssmtp curl; \
+    apt-get -qq -y clean ; \
+    )
+RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \
     echo "deb http://ppa.launchpad.net/stebbins/handbrake-releases/ubuntu ${DISTRIB_CODENAME} main" > /etc/apt/sources.list.d/handbrake.list; \
     echo "deb-src http://ppa.launchpad.net/stebbins/handbrake-releases/ubuntu ${DISTRIB_CODENAME} main" >> /etc/apt/sources.list.d/handbrake.list; \
     curl -s "http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x8771ADB0816950D8" | apt-key add -; \
     echo "Installing handbrake"; \
-    apt-get -qq update && apt-get -qq -y --allow-unauthenticated install handbrake-cli; \
+    apt-get -qq update && apt-get -qq -y --no-install-recommends --allow-unauthenticated install handbrake-cli; \
     apt-get -qq -y clean ; \
     )
 
 ADD https://github.com/just-containers/s6-overlay/releases/download/v1.19.1.1/s6-overlay-amd64.tar.gz /tmp/
-RUN tar xzf /tmp/s6-overlay-amd64.tar.gz  -C /
+RUN ( tar xzf /tmp/s6-overlay-amd64.tar.gz  -C / ; rm /tmp/s6-overlay-amd64.tar.gz )
 
 VOLUME /postdata
 
