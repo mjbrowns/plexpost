@@ -12,7 +12,7 @@ RUN ( \
     curl -s "http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x8771ADB0816950D8" | apt-key add -; \
     echo "Installing handbrake"; \
     apt-get -qq update && apt-get -qq -y --allow-unauthenticated install handbrake-cli; \
-    apt-get -qq -y clean
+    apt-get -qq -y clean ; \
     )
 
 ADD https://github.com/just-containers/s6-overlay/releases/download/v1.19.1.1/s6-overlay-amd64.tar.gz /tmp/
