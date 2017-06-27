@@ -1,5 +1,9 @@
 # Change Log
 
+## Version 1.15
+In the 1.12 update I trimmed down the plexpost image but in the process introduced an error - I did not have the ca-certificates installed so the slack posting process failed.
+This update adds ca-certificates to the images so slack alerting now works again.
+
 ## Version 1.14
 * Plex made a permanent change to their DVR process; rather than outputting native streams (usually TS files) they are remuxing all DVR streams to mkv.  This version changes the flow of post processing to handle both TS input files and mkv automatically.
 * Corrected error handling to properly call back to the alerting functions in more scenarios

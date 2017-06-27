@@ -53,6 +53,7 @@ services:
       - MAILDOMAIN=server.mydomain.com
       - MAILHUB=server.mydomain.com
       - MAILFROM=plexpost@server.mydomain.com
+      - SLACK_HOOK=https://hooks.slack.com/services/XXXXXXXX/YYYYYYYYY/aaaaaaaaaaaaaaaaaaa
     volumes:
       - ./data/tv:/media/tv
       - ./data/movies:/media/movies
