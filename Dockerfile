@@ -8,7 +8,7 @@ RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \
     )
 RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \
     echo "Installing prerequisites"; \
-    apt-get -qq -y --no-install-recommends install ffmpeg libargtable2-0 jq ssmtp curl ca-certificates; \
+    apt-get -qq -y --no-install-recommends install ffmpeg libargtable2-0 jq ssmtp curl ca-certificates tzdata; \
     apt-get -qq -y clean ; \
     )
 RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \

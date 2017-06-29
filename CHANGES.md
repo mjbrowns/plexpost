@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 1.16
+...and figured out that i needed to include the tzdata package so that the container would sync time with timzeone support.
+
 ## Version 1.15
 In the 1.12 update I trimmed down the plexpost image but in the process introduced an error - I did not have the ca-certificates installed so the slack posting process failed.
 This update adds ca-certificates to the images so slack alerting now works again.
