@@ -1,5 +1,13 @@
 # Change Log
 
+## Version 1.17
+I have no idea why, but after the latest docker CE update, the ADD function didn't seem to work correctly.  
+I had used the add statement to pull the S6 archive into the image and then unpack it; it seemed to do the download but then when it got to the next line in the dockerfile to unpack it the 
+file wasn't there.  I dug around quite a bit and it wasn't anywhere.  So I have no idea why, but I had to update my build process to handle this separately.  Ironically its probably a
+better design this way :-)
+
+Also: Removed the date printing from the queueman and plexprocess scripts - since docker's output manager is timestamped this is redundant.
+
 ## Version 1.16
 ...and figured out that i needed to include the tzdata package so that the container would sync time with timzeone support.
 

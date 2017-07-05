@@ -73,7 +73,10 @@ echo Building slackpost from \$SOURCE
 mkdir /golang
 export GOPATH=/golang
 go get github.com/mjbrowns/slackpost
-go install github.com/mjbrowns/slackpost
+go install -ldflags="-s -w" github.com/mjbrowns/slackpost
+ls -l \$GOPATH/bin/slackpost
+upx --brute \$GOPATH/bin/slackpost
+ls -l \$GOPATH/bin/slackpost
 cp -v \$GOPATH/bin/slackpost /usr/local/bin/slackpost
 EOD
 do_buildscript slackpost
@@ -96,3 +99,21 @@ chmod 0644 /usr/local/etc/*  /etc/cont-init.d/* /etc/fix-attrs.d/* /etc/services
 chmod 0755 /usr/local/bin/*
 EOD
 do_buildscript plexpost
+
+echo '===================================================================================================='
+echo '== Loading s6                                                                                     =='
+echo '===================================================================================================='
+S6PATH=https://api.github.com/repos/just-containers/s6-overlay/releases/latest
+S6URL=$(curl -s ${S6PATH} | jq -r '.assets[] | select(.name == "s6-overlay-amd64.tar.gz") | .browser_download_url')
+if [ -z "${S6URL}" ]; then
+    echo 'Error retrieving latest S6 archive'
+else
+    echo "Found latest s6 at ${S6URL}"
+    curl -#L "${S6URL}" > ${W_BASE}/s6.tgz 
+    if [ -f ${W_BASE}/s6.tgz ]; then
+        (cd ${W_BASE};tar xzf s6.tgz)
+        rm ${W_BASE}/s6.tgz   
+    else
+        echo 'Error - s6 archive failed to download'
+    fi
+fi

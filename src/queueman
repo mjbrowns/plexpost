@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 do_log() {
-    echo "$(date +%D-%T): $@"
+    echo "$@"
 }
 
 die() {

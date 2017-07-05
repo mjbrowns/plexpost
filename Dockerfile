@@ -20,8 +20,7 @@ RUN ( . /etc/lsb-release; export DEBIAN_FRONTEND=noninteractive ; \
     apt-get -qq -y clean ; \
     )
 
-ADD https://github.com/just-containers/s6-overlay/releases/download/v1.19.1.1/s6-overlay-amd64.tar.gz /tmp/
-RUN ( tar xzf /tmp/s6-overlay-amd64.tar.gz  -C / ; rm /tmp/s6-overlay-amd64.tar.gz )
+ADD ./workdir /
 
 VOLUME /postdata
 
@@ -60,8 +59,6 @@ ENV TZ=America/New_York \
     MAILHUB="" \
     MAILFROM="" \
     SLACK_HOOK=""
-
-ADD ./workdir /
 
 ENTRYPOINT ["/init"]
 CMD []
