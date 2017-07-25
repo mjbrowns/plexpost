@@ -75,25 +75,50 @@ export GOPATH=/golang
 go get github.com/mjbrowns/slackpost
 go install -ldflags="-s -w" github.com/mjbrowns/slackpost
 ls -l \$GOPATH/bin/slackpost
-upx --brute \$GOPATH/bin/slackpost
+#upx --brute \$GOPATH/bin/slackpost
 ls -l \$GOPATH/bin/slackpost
 cp -v \$GOPATH/bin/slackpost /usr/local/bin/slackpost
 EOD
 do_buildscript slackpost
 
 echo '===================================================================================================='
+echo '== Updating tinycgi                                                                               =='
+echo '===================================================================================================='
+cat > ${W_SCRIPT} <<EOD
+#!/usr/bin/env bash
+echo Building tinycgi 
+mkdir /golang
+mkdir /golang/bin
+export GOPATH=/golang
+export GOBIN=/golang/bin
+cp -v /src/tinycgi.go \${GOPATH}/
+go install -ldflags="-s -w" \${GOPATH}/tinycgi.go
+ls -l \$GOPATH/bin/tinycgi
+#upx --brute \$GOPATH/bin/tinycgi
+ls -l \$GOPATH/bin/tinycgi
+cp -v \$GOPATH/bin/tinycgi /usr/local/bin/tinycgi
+EOD
+do_buildscript tinycgi
+
+echo '===================================================================================================='
 echo '== Loading plexpost components                                                                    =='
 echo '===================================================================================================='
 cat > ${W_SCRIPT} <<EOD
 mkdir -p /usr/local/etc/
+mkdir -p /usr/local/web/
+mkdir -p /usr/local/cgi/
 mkdir -p /etc/services.d/queueman/
+mkdir -p /etc/services.d/manager/
 cp -v /src/01-configure /etc/cont-init.d/
 cp -v /src/01-programs  /etc/fix-attrs.d/
 cp -v /src/queueman-run /etc/services.d/queueman/run
+cp -v /src/manager-run /etc/services.d/manager/run
 cp -v /src/plexprocess  /usr/local/bin
 cp -v /src/plexpost     /usr/local/bin
 cp -v /src/queueman     /usr/local/bin
 cp -v /src/comskip.ini  /usr/local/etc/
+cp -v /src/manager.html /usr/local/web/default.html
+cp -v /src/manager.cgi  /usr/local/cgi/manager
 chown -R $(id -u):$(id -g) /usr/local /etc/cont-init.d /etc/fix-attrs.d /etc/services.d
 chmod 0644 /usr/local/etc/*  /etc/cont-init.d/* /etc/fix-attrs.d/* /etc/services.d/queueman/*
 chmod 0755 /usr/local/bin/*

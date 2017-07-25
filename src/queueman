@@ -80,7 +80,7 @@ while [ -z "$FINISHED" ]; do
         _tf=${QUEUEDIR}/${_qe}.log
         _te=${QUEUEDIR}/${_qe}.err
         cat ${FN} > ${_tf}
-        (/usr/local/bin/plexprocess $_qe || touch ${_te}) | tee -a ${_tf}
+        (/usr/local/bin/plexprocess $_qe || touch ${_te}) 2>&1 | tee -a ${_tf}
         if [ -f "${_te}" ];then
             alerter "Error Processing Queue Entry: ${_qe}" "${_tf}" "Log File"
             rm "${_te}"

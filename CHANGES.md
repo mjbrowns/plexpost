@@ -1,5 +1,11 @@
 # Change Log
 
+## Version 2.01
+Minor bugfix to correct detection of running jobs in the manager web interface.
+
+## Version 2.0
+Added a simple web based management GUI so you can rerun failed post-processing tasks and look at the postprocess data without having to use docker exec.  See README
+
 ## Version 1.17
 I have no idea why, but after the latest docker CE update, the ADD function didn't seem to work correctly.  
 I had used the add statement to pull the S6 archive into the image and then unpack it; it seemed to do the download but then when it got to the next line in the dockerfile to unpack it the 

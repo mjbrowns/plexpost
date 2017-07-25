@@ -40,6 +40,7 @@ VOLUME /postdata
 # MAILFROM - sets email address that emails from this process should use
 # SLACK_HOOK - sets SLACK channel webhook for notifications
 ENV TZ=America/New_York \
+    MANAGER_PORT=8080 \
     COMSKIP_UID=113 \
     COMSKIP_GID=123 \
     COMSKIP_USER=plex \
