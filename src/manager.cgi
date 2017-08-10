@@ -1,0 +1,515 @@
+#!/usr/bin/env bash
+#
+set -o nounset
+set -o errexit
+set -o noglob
+#################################################################
+# inline CSS block variable
+#################################################################
+read -r -d '' myCSS << 'EOF' || true
+    body {background-color: #002050}
+    p.err {color: darkred}
+    fieldset.jobs {
+        color: green;
+    }
+    table.jobs {
+        background-color: gray;
+        color: white;
+    }
+    tr.jobs {
+        background-color: #002050;
+        color: #DDDDDD;
+    }
+    tr.active {
+        background-color: #002050;
+        color: green;
+    }
+    tr.inactive {
+        background-color: #002050;
+        color: #c00000;
+    }
+    th.jobs {
+        background-color: #E0DDEE;
+        color: #002050;
+    }
+    legend.logfile {
+        color: orange;
+    }
+    pre.logfile {
+        background-color: #AAAAAA;
+        color:#002050;
+    }
+    fieldset.cleanup {
+        color: #DDDDDD;
+    }
+    legend.cleanup {
+        color: green;
+    }
+    div.cleanup {
+        background-color: #002050;
+        color: #DDDDDD;
+    }
+    ul.cleanup {
+        margin-top: 0px;
+        margin-bottom: 10px;
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 20px;
+        display:block;
+        list-style-type: square;
+    }
+    div.hdr {
+        background-color: #E0DDEE;
+        color: #000070;
+        height: 40px;
+    }
+    h1.hdr {
+        color: #002050;
+    }
+EOF
+#################################################################
+# globals
+#################################################################
+cgiAction=""
+declare -a cgiID
+cgiID=()
+unset idSortDate
+unset idShowDate
+unset idFileName
+unset idShowName
+unset idEpisode
+unset idTitle
+unset idPID
+unset idLogfile
+unset idSorted
+declare -A idSortDate
+declare -A idShowDate
+declare -A idFileName
+declare -A idShowName
+declare -A idEpisode
+declare -A idTitle
+declare -A idPID
+declare -A idLogfile
+declare -A idState=() # state: S=saved, A=active, F=failed Q=queued
+declare -a idSorted=()
+declare totalSaved
+declare totalActive
+#################################################################
+# functions
+#################################################################
+function debug {
+    echo "<div class=debug><hr><h1>Debug</h1><pre style=color:white>"
+    for i in "${@}"; do
+        echo $i
+    done
+    echo "</pre><hr></div>"
+}
+
+function resetVars {
+    idSortDate=()
+    idShowDate=()
+    idFileName=()
+    idShowName=()
+    idEpisode=()
+    idTitle=()
+    idPID=()
+    idLogfile=()
+    idState=()
+    idSorted=()
+    totalSaved=0
+    totalActive=0
+}
+
+function doHeader {
+    echo "Content-Type: text/html"
+    echo ""
+    echo "<head>"
+    echo "<style>${myCSS}</style>"
+    echo "<title>PlexPost Manager</title>"
+    echo "</head>"
+}
+
+function pageHeader {
+    echo "<div class=hdr><h1 class=hdr>${@}</h1></div>"
+}
+
+
+function doHomeButton {
+    echo "<div style=homebtn><form>"
+    echo -n '<button type=submit formaction="'
+    echo -n "$HTTP_REFERER"
+    echo '">Home</button>'
+    echo "</form></div>"
+}
+
+function getParams {
+
+    [ -z "QUERY_STRING" ] && return
+
+    local QSTR="${QUERY_STRING}"
+    until [ -z "$QSTR" ]; do
+        local QCUR="${QSTR%%\&*}"
+        QSTR="${QSTR#$QCUR}"
+        QSTR="${QSTR#\&}"
+        local QF=""
+        typeset -l QF
+        local QF=${QCUR%%=*}
+        local QV=${QCUR##*=}
+        case "$QF" in
+            action)
+                cgiAction="$QV"
+                ;;
+            id)
+                cgiID[${#cgiID[@]}]="$QV"
+                ;;
+            *)
+                ;;
+        esac
+    done
+}
+
+function loadData {
+    resetVars
+    for i in $(find ${QUEUEDIR} -maxdepth 1 -type f \( -name "*.save" -o -name "*.working" -o -name "*.job" \) -printf "%T@,%f\n"); do
+        local DT="${i%%,*}"
+        local FN="${i##*,}"
+        local FT="${FN##*.}"
+        local ID="${FN%%.*}"
+        idFileName["${ID}"]="${FN}"
+        idSortDate["${ID}"]="${DT}"
+        idShowDate["${ID}"]="$(date -d @${DT} +'%x %X')"
+        if [ -f "${QUEUEDIR}/${ID}.log" ] ;then 
+            idLogfile["${ID}"]="Y"
+        else
+            idLogfile["${ID}"]="N"
+        fi
+        local SFN="$(<${QUEUEDIR}/$FN)"
+        local SN="${SFN%%.mkv*}"
+        local sname="${SN%% - *}"
+        SN="${SN#* - }"
+        local eid="${SN%% - *}"
+        local stitle="${SN#* - }"
+        idShowName["${ID}"]="$sname"
+        idEpisode["${ID}"]="$eid"
+        idTitle["${ID}"]="$stitle"
+        local PID="$(ps -eo pid,command|grep plexprocess|grep $ID|awk '{print $1}')"
+        idPID["${ID}"]="$PID"
+        [ ! -z "${$PID}" ] && FT="active"
+        case "$FT" in 
+            working)    idState["${ID}"]="F" 
+                        (( totalActive+=1 ))
+                        ;;
+            active)     idState["${ID}"]="A" 
+                        (( totalActive+=1 ))
+                        ;;
+            job)        idState["${ID}"]="Q"
+                        (( totalActive+=1 ))
+                        ;;
+            save)       idState["${ID}"]="S"
+                        (( totalSaved+=1 ))
+                        ;;
+            *)          idState["${ID}"]="E" ;;
+        esac
+    done 
+    idSorted=($(
+        for i in "${!idFileName[@]}"; do
+            echo "${idSortDate[$i]},${i}"
+        done |sort -r -t, -k 1|cut -f2 -d,
+        ))
+}
+
+function doListSaved {
+    echo "<form method=get>"
+    echo "<fieldset class=jobs>" 
+    echo "<legend>Completed Jobs</legend>"
+    if [ ${totalSaved} -gt 0 ] ;then
+        echo "<table class=jobs>"
+        echo '<tr class="jobs">'
+        echo '<th class="jobs">Select</td>'
+        echo '<th class="jobs">Date</td>'
+        echo '<th class="jobs">Show</td>'
+        echo '<th class="jobs">Episode</td>'
+        echo '<th class="jobs">Name</td>'
+        echo "</tr>"
+
+        for i in "${idSorted[@]}"; do
+            [ "${idState[$i]}" = "S" ] || continue
+            echo "<tr class=jobs>"
+            echo "<td class=jobs><input type=checkbox id=$i name=id value=$i></td>"
+            echo "<td class=jobs>${idShowDate[$i]}</td>"
+            echo "<td class=jobs>${idShowName[$i]}</td>"
+            echo "<td classstitle=jobs>${idEpisode[$i]}</td>"
+            echo "<td class=jobs>${idTitle[$i]}</td>"
+            echo "</tr>"
+        done
+
+        echo "</table>"
+        echo "<div>"
+        echo "<button type=submit name=action value=delete>Delete Selected</button>"
+        echo "<button type=submit name=action value=delcomp>Delete All</button>"
+        echo "</div>"
+    else
+        echo "No Jobs Found"
+    fi
+    echo "</fieldset>"
+    echo "</form>"
+}
+
+function doListActive {
+
+    echo "<form method=get>"
+    echo "<fieldset class=jobs>" 
+    echo "<legend>Active Jobs</legend>"
+    if [ ${totalActive} -gt 0 ] ;then
+        echo "<table class=jobs>"
+        echo '<tr class="jobs">'
+        echo '<th class="jobs">Select</td>'
+        echo '<th class="jobs">Date</td>'
+        echo '<th class="jobs">Show</td>'
+        echo '<th class="jobs">Episode</td>'
+        echo '<th class="jobs">Name</td>'
+        echo '<th class="jobs">State</td>'
+        echo "</tr>"
+
+        for i in "${idSorted[@]}"; do
+            [ "${idState[$i]}" = "S" ] && continue
+            local ST=""
+            case "${idState[$i]}" in
+                S)  continue ;;
+                F)  echo "<tr class=inactive>"
+                    ST="Failed"
+                    ;;
+                A)  echo "<tr class=active>"
+                    ST="Running"
+                    ;;
+                Q)  echo "<tr class=jobs>"
+                    ST="Queued"
+                    ;;
+                *)  echo "<tr class=inactive>"
+                    ST="Invalid"
+                    ;;
+            esac
+            echo "<td class=jobs><input type=checkbox id=$i name=id value=$i></td>"
+            echo "<td class=jobs>${idShowDate[$i]}</td>"
+            echo "<td class=jobs>${idShowName[$i]}</td>"
+            echo "<td classstitle=jobs>${idEpisode[$i]}</td>"
+            echo "<td class=jobs>${idTitle[$i]}</td>"
+            echo "<td class=jobs>$ST</td>"
+            echo "</tr>"
+        done
+        echo "</table>"
+        echo "<div>"
+        echo "<button type=submit name=action value=logs>Show Logs</button>"
+        echo "<button type=submit name=action value=retry>Retry Selected</button>"
+        echo "<button type=submit name=action value=abort>Abort Selected</button>"
+        echo "<button type=submit name=action value=delete>Delete Selected</button>"
+        echo "</div>"
+    else
+        echo "No Jobs Found"
+    fi
+    echo "</fieldset>"
+    echo "</form>"
+}
+
+function doList {
+    pageHeader "PlexPost Jobs"
+    doListActive
+    doListSaved
+}
+
+function cleanFile {
+    local FN="${1:-}"
+    [ -z "$FN" ] && return
+    [ -f "$FN" ] && {
+        echo "<li>$FN</li>"
+        rm -f "$FN" || true
+    }
+    return 0
+}
+
+function cleanDir {
+    local DN="${1:-}"
+    [ -z "$DN" ] && return
+    [ -d "$DN" ] && {
+        echo "<li>$DN (directory)</li>"
+        rm -rf "$DN" || true
+    }
+    return 0
+}
+
+function doCleanup {
+    local ID="${1:-}"
+    [ -z "$ID" ] && return
+    if [ ! -z "${#idPID[@]}" ] ; then
+        if [ ! -z "${idPID["$ID"]}" ]; then
+            echo "<li><font color=#c00000>Job ID: $ID - Can't delete running job, abort it first!</font></li>"
+            return
+        fi
+    fi
+    echo "Job ID: $ID<ul class=cleanup>"
+    cleanFile "${QUEUEDIR}/${ID}.save"
+    cleanFile "${QUEUEDIR}/${ID}.working"
+    cleanFile "${QUEUEDIR}/${ID}.log"
+    cleanDir  "${QUEUEDIR}/working-${ID}"
+    echo "</ul>"
+}
+
+function doDelete {
+    pageHeader "PlexPost Job Cleanup"
+    if [ ${#cgiID[@]} -lt 1 ] ;then
+        echo "<p class=err>No Jobs Selected</p>"
+    else
+        echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Deleted Jobs</legend>"
+        for i in ${cgiID[@]}; do
+            doCleanup "$i"
+        done 
+        echo "</fieldset></div>"
+    fi
+    doHomeButton
+}
+
+function doDeleteAllCompleted {
+    pageHeader "PlexPost Job Cleanup"
+    echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Deleted Jobs</legend>"
+    for i in "${idSorted[@]}"; do
+        [ "${idState[$i]}" = "S" ] || continue
+        doCleanup "$i"
+    done
+    echo "</fieldset></div>"
+    doHomeButton
+}
+
+function abortJob {
+    local ID="${1:-}"
+    [ -z "$ID" ] && return 0
+    if [ -z "${idPID["$ID"]}" ]; then
+        echo "<font color=#C00000>Job $ID is not running, can't abort it</font><br>" 
+    else
+        kill "${idPID["$ID"]}" && echo "Aborted Job $ID<br>" || echo "<font color=#C00000>Failed to abort Job ID $ID</font><br>"
+    fi
+}
+
+function displayLogs {
+    local ID="${1:-}"
+    [ -z "$ID" ] && return 0
+    echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Job Log: $ID</legend>"
+    local LF="$QUEUEDIR/$ID.log"
+    local LD="$QUEUEDIR/working-$ID"
+    if [ -f "$LF" ]; then
+        echo "<fieldset class=logfile><legend class=logfile>$ID.log</legend>"
+        echo "<pre class=logfile>$(<$LF)</pre>"
+        echo "</fieldset>"
+    fi
+    if [ -d "$LD" ]; then
+        find $LD -type f -maxdepth 1 -name '*.log' | while read i; do
+            local FN="${i##*/}"
+            echo "<fieldset class=logfile><legend class=logfile>$FN</legend>"
+            echo "<pre class=logfile>$(<$i)</pre>"
+            echo "</fieldset>"
+        done
+    fi
+    echo "</fieldset></div>"
+}
+
+function doAbort {
+    pageHeader "PlexPost Job Abort - Status"
+    if [ ${#cgiID[@]} -lt 1 ] ;then
+        echo "<p class=err>No Jobs Selected</p>"
+    else
+        echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Aborted Jobs</legend>"
+        for i in ${cgiID[@]}; do
+            abortJob "$i"
+        done 
+        echo "</fieldset></div>"
+    fi
+    doHomeButton
+}
+
+function doShowLogs {
+    pageHeader "PlexPost Log Viewer"
+    if [ ${#cgiID[@]} -lt 1 ] ;then
+        echo "<p class=err>No Jobs Selected</p>"
+    else
+        for i in ${cgiID[@]}; do
+            displayLogs "$i"
+        done 
+    fi
+    doHomeButton
+}
+
+function retryJob {
+    local ID="${1:-}"
+    [ -z "$ID" ] && return 0
+    if [ ! -z "${idPID["$ID"]}" ]; then
+        echo "<font color=#c00000>Job $ID is already running!<font><br>"
+        return
+    fi
+    local FN="${QUEUEDIR}/${ID}.working"
+    local JF="${QUEUEDIR}/${ID}.job"
+    local DN="${QUEUEDIR}/working-${ID}"
+    if [ -f "$FN" ] ; then
+        [ -d "$DN" ] && rm -rf "$DN" || true
+        mv "$FN" "$JF"
+        echo "Retrying $ID<br>"
+    fi
+}
+
+function doRetryJobs {
+    pageHeader "PlexPost Job Retry - Status"
+    if [ ${#cgiID[@]} -lt 1 ] ;then
+        echo "<p class=err>No Jobs Selected</p>"
+    else
+        echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Retry Jobs</legend>"
+        for i in ${cgiID[@]}; do
+            retryJob "$i"
+        done 
+        echo "</fieldset></div>"
+    fi
+    doHomeButton
+}
+
+doHeader
+getParams
+loadData
+
+echo "<body>"
+
+[ -z "$cgiAction" ] && cgiAction=list
+case "$cgiAction" in 
+    list)
+        doList
+        ;;
+    delete)
+        doDelete
+        ;;
+    delcomp)
+        doDeleteAllCompleted
+        ;;
+    abort)
+        doAbort
+        ;;
+    logs)
+        doShowLogs
+        ;;
+    retry)
+        doRetryJobs
+        ;;
+    test)
+        pageHeader "Test/Debug"
+        echo "<hr><pre class=logfile>"
+        loadData
+        echo ""
+        echo "Sorted IDs:"
+        for i in "${idSorted[@]}"; do 
+            printf "%-40s %18s %3s %10u %s\n" "$i" "${idShowDate[$i]}" "${idState[$i]}" "${idPID[$i]}" "${idFileName[$i]}"
+        done
+        echo "</pre>"
+        ;;
+    *)
+        pageHeader "Invalid Function"
+        echo "${cgiFUNCTION}"
+        doHomeButton
+        ;;
+esac
+
+echo "</body>"
