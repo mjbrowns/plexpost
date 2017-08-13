@@ -3,19 +3,21 @@ Docker based plex + postprocessor that handles commercial cutting and transcodin
 
 # Overview
 
-I'm a plexpass subscriber and I've just started leveraging the (still-in-beta) DVR capabilities of plex.  I am also a docker user and I started using the official docker plex implementation as soon as it came out.
-
 This project leverages docker and docker-compose to create a service of two containers:
 
 1. The standard plexpass container, modified by injecting my postprocessing script (in *src/plexpost*)
 2. My "plexpost" container, which detects new recordings and processes them according to a variety of settings
 
-This is now published as a built container now on dockerhub.  See [**here**](https://hub.docker.com/r/mbrown/plexpost/).
+# Docker Container is available on dockerhub
 
-If you want to pull the sources from here and build it yourself, here's a bit of information.
+This is now published as a built container now on dockerhub.  See [**here**](https://hub.docker.com/r/mbrown/plexpost/).
 
 # Change Log
 The change log can be found in [CHANGES.md](https://github.com/mjbrowns/plexpost/blob/master/CHANGES.md)
+
+# Build instructions
+
+Build instructions can be found in [BUILD.md](https://github.com/mjbrowns/plexpost/blob/master/BUILD.md)
 
 # Directory Hierarchy
 To help you understand the flow, here's a hierarchy of the directory structure used in this project:
