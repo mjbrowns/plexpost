@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+SOURCE=/tmp/src
+TARGET=/tmp/out
+GITSRC=github.com/mjbrowns/slackpost
+export GOPATH=/tmp/golang
+mkdir ${GOPATH}
+
+echo '===================================================================================================='
+echo '== Updating slackpost                                                                             =='
+echo '===================================================================================================='
+echo Building slackpost from $GITSRC
+
+go get $GITSRC
+go install -ldflags="-s -w" $GITSRC
+[ ! -z "$1" ] && upx --brute ${GOPATH}/bin/slackpost
+
+EXEDIR=${TARGET}/usr/local/bin
+mkdir -p ${EXEDIR}
+cp -v ${GOPATH}/bin/slackpost ${EXEDIR}
+
+

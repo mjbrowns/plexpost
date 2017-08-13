@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+export SOURCE=/tmp/src
+export TARGET=/tmp/out
+echo '===================================================================================================='
+echo '== Updating tinycgi                                                                               =='
+echo '===================================================================================================='
+echo Building tinycgi 
+mkdir /tmp/golang
+mkdir /tmp/golang/bin
+export GOPATH=/tmp/golang
+export GOBIN=/tmp/golang/bin
+go install -ldflags="-s -w" ${SOURCE}/tinycgi.go
+[ ! -z "$1" ] && upx --brute $GOPATH/bin/tinycgi
+umask 022
+mkdir -p ${TARGET}/usr/local/bin
+cp -v $GOPATH/bin/tinycgi ${TARGET}/usr/local/bin/tinycgi

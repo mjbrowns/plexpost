@@ -194,7 +194,7 @@ function loadData {
         idTitle["${ID}"]="$stitle"
         local PID="$(ps -eo pid,command|grep plexprocess|grep $ID|awk '{print $1}')"
         idPID["${ID}"]="$PID"
-        [ ! -z "${$PID}" ] && FT="active"
+        [ ! -z "${PID}" ] && FT="active"
         case "$FT" in 
             working)    idState["${ID}"]="F" 
                         (( totalActive+=1 ))

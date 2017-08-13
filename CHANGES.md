@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 2.10
+Complete rebuild of the git structure and build process
+
 ## Version 2.01
 Minor bugfix to correct detection of running jobs in the manager web interface.
 

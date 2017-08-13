@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+echo '===================================================================================================='
+echo '== Updating comchap                                                                               =='
+echo '===================================================================================================='
+BASE=/tmp/comchap
+TARGET=/tmp/out
+[ -f /out/comchap ] && rm /out/comchap
+[ -f /out/comcut ] && rm /out/comcut
+
+echo Cloning comchap git repo
+git clone https://github.com/BrettSheleski/comchap ${BASE}
+
+cd ${BASE} && make 
+ls -l ${BASE}
+
+umask 022
+EXEDIR=${TARGET}/usr/local/bin
+DOCDIR=${TARGET}/usr/local/lib/comchap
+
+mkdir -p ${DOCDIR}
+cp ${BASE}/*.md  ${DOCDIR}
+cp ${BASE}/*.txt  ${DOCDIR}
+
+mkdir -p ${EXEDIR}
+cp ${BASE}/comcut ${EXEDIR}
+cp ${BASE}/comchap ${EXEDIR}
+
+exit 0

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+W_BASE=${1:-/tmp}
+
+echo '===================================================================================================='
+echo '== Loading s6                                                                                     =='
+echo '===================================================================================================='
+
+S6PATH=https://api.github.com/repos/just-containers/s6-overlay/releases/latest
+S6URL=$(curl -s ${S6PATH} | jq -r '.assets[] | select(.name == "s6-overlay-amd64.tar.gz") | .browser_download_url')
+if [ -z "${S6URL}" ]; then
+    echo 'Error retrieving latest S6 archive'
+else
+    echo "Found latest s6 at ${S6URL}"
+    echo "Unpacking s6 to ${W_BASE}"
+    curl -#L "${S6URL}" > ${W_BASE}/s6.tgz 
+    if [ -f ${W_BASE}/s6.tgz ]; then
+        (cd ${W_BASE};tar xzf s6.tgz)
+        rm ${W_BASE}/s6.tgz   
+    else
+        echo 'Error - s6 archive failed to download'
+    fi
+fi
+exit 0

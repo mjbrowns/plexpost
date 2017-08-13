@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+BASE=/tmp/comskip
+TARGET=/tmp/out
+
+echo '===================================================================================================='
+echo '== Updating comskip                                                                               =='
+echo '===================================================================================================='
+echo Cloning comskip git repo
+
+git clone https://github.com/erikkaashoek/Comskip ${BASE}
+
+export CFLAGS=-w 
+
+cd ${BASE} 
+./autogen.sh && ./configure && make 
+
+EXEBASE=${TARGET}/usr/local/bin
+mkdir -p ${EXEBASE}
+umask 022
+cp ${BASE}/comskip ${EXEBASE}
+
