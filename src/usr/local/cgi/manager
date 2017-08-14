@@ -128,7 +128,7 @@ function doHeader {
     echo ""
     echo "<head>"
     if [ "$1" = "refresh" ]; then
-        echo "<meta http-equiv=refresh content=10>"
+        echo "<meta http-equiv=refresh content=30>"
     fi
     echo "<style>${myCSS}</style>"
     echo "<title>PlexPost Manager</title>"
