@@ -8,7 +8,7 @@ echo '== Updating comskip                                                       
 echo '===================================================================================================='
 echo Cloning comskip git repo
 
-git clone https://github.com/erikkaashoek/Comskip ${BASE}
+git clone --depth=1 https://github.com/erikkaashoek/Comskip ${BASE}
 
 export CFLAGS=-w 
 

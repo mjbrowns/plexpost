@@ -1,5 +1,9 @@
 # Change Log
 
+## Version 2.21
+1. simplified the makefile a bit.
+1. Moved the buildenv Dockerfile out and published that container separately on Dockerhub (see mjbrowns/buildenv)
+
 ## Version 2.20
 1. Fixed several bugs, including the makefile bug that didn't include comskip in the docker image.  
 1. A *complete* rewrite of the plexprocess code, streamlining operations and making it much more readable, and vastly improved error handling and restart management.

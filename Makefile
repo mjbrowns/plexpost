@@ -9,93 +9,77 @@ SOURCE=$(PWD)/$(SRC)
 TARGET=$(PWD)/$(WRK)
 BUILD=$(PWD)/build
 LOGS=$(PWD)/logs
-BUILDENV=buildenv
+BUILDENV=mbrown/buildenv
 PLEXPOST=$(ME)/plexpost
 TINYCGI=$(TARGET)/usr/local/bin/tinycgi
 COMCHAP=$(TARGET)/usr/local/bin/comchap
 COMCUT=$(TARGET)/usr/local/bin/comcut
 COMSKIP=$(TARGET)/usr/local/bin/comskip
 SLACKPOST=$(TARGET)/usr/local/bin/slackpost
+DIRS=$(TARGET) $(LOGS)
+ELEMENTS=$(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(COMSKIP) $(SLACKPOST) 
 
-BUILDENVID != docker image ls -q $(BUILDENV):latest
-ifdef BUILDENVID
-MAKEBUILD=$(TARGET)
-else
-MAKEBUILD=makebuildenv
-endif
-ifneq (,$(findstring B,$(MAKEFLAGS)))
-MAKEBUILD=makebuildenv
-endif
+all: $(PLEXPOST) 
 
-all: prepare $(PLEXPOST)
-
-clean:
-	$(RM) -r $(TARGET)
-	$(RM) -r $(LOGS)
-
-blank: ;
-
-prepare: $(MAKEBUILD)
-	@mkdir -p $(LOGS)
-	@mkdir -p $(TARGET)
-
-makebuildenv: prepare Dockerfile.buildenv
-	docker build --pull --tag $(BUILDENV):latest -f Dockerfile.$(BUILDENV) . 2>&1 | tee $(LOGS)/build-buildenv.log
-
-$(BUILDENV): $(MAKEBUILD) ;
+.PHONY: clean
+clean: 
+	$(RM) -r $(DIRS)
 
 tinycgi: $(TINYCGI)
-	ls -l $(TINYCGI)
 
 $(TINYCGI): src/tinycgi.go build/make-tinycgi
+	mkdir -p $(DIRS)
 	docker run --rm --name build-tinycgi -it \
         -v $(BUILD):/tmp/build \
 		-v $(SOURCE):/tmp/src \
 		-v $(TARGET):/tmp/out \
 		-u $(MYUID):$(MYGID) \
-        buildenv bash -c /tmp/build/make-tinycgi $(PACK) | tee $(LOGS)/build-tinycgi.log
+        $(BUILDENV) bash -c "/tmp/build/make-tinycgi $(PACK)" | tee $(LOGS)/build-tinycgi.log
 
-comchap: prepare $(COMCHAP)
-comcut: prepare $(COMCUT)
+comchap: $(COMCHAP)
+comcut: $(COMCUT)
 
 $(COMCUT): $(COMCHAP)
 $(COMCHAP): build/make-comchap
+	mkdir -p $(DIRS)
 	docker run --rm --name build-comchap -it \
         -v $(BUILD):/tmp/build \
 		-v $(SOURCE):/tmp/src \
 		-v $(TARGET):/tmp/out \
 		-u $(MYUID):$(MYGID) \
-        buildenv bash -c /tmp/build/make-comchap | tee $(LOGS)/build-comchap.log
+        $(BUILDENV) bash -c /tmp/build/make-comchap | tee $(LOGS)/build-comchap.log
 
-comskip: prepare $(COMSKIP)
+comskip: $(COMSKIP)
 $(COMSKIP): build/make-comskip
+	mkdir -p $(DIRS)
 	docker run --rm --name build-comskip -it \
         -v $(BUILD):/tmp/build \
 		-v $(SOURCE):/tmp/src \
 		-v $(TARGET):/tmp/out \
 		-u $(MYUID):$(MYGID) \
-        buildenv bash -c /tmp/build/make-comskip | tee $(LOGS)/build-comskip.log
+        $(BUILDENV) bash -c /tmp/build/make-comskip | tee $(LOGS)/build-comskip.log
 
-slackpost: prepare $(SLACKPOST)
+slackpost: $(SLACKPOST)
 $(SLACKPOST): build/make-slackpost
+	mkdir -p $(DIRS)
 	docker run --rm --name build-slackpost -it \
         -v $(BUILD):/tmp/build \
 		-v $(SOURCE):/tmp/src \
 		-v $(TARGET):/tmp/out \
 		-u $(MYUID):$(MYGID) \
-        buildenv bash -c /tmp/build/make-slackpost $(PACK) | tee $(LOGS)/build-slackpost.log
+        $(BUILDENV) bash -c "/tmp/build/make-slackpost $(PACK)" | tee $(LOGS)/build-slackpost.log
 
+s6: $(TARGET)/init
 $(TARGET)/init: 
+	mkdir -p $(DIRS)
 	build/get-s6 $(TARGET) 2>&1 | tee $(LOGS)/get-s6.log
 
-s6: prepare $(TARGET)/init
+prepare: $(ELEMENTS)
 
-prepare: $(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(COMSKIP) $(SLACKPOST) 
+docker: $(ELEMENTS)
+	docker build --build-arg=WRKDIR=$(WRK) --build-arg=SRCDIR=$(SRC) --pull --tag $(PLEXPOST):latest . 2>&1 | tee $(LOGS)/build-plexpost.log
 
-docker: prepare $(TARGET) $(SOURCE)
-	docker build --build-arg=WRKDIR=$(WRK) --build-arg=SRCDIR=$(SRC) --pull --tag $(PLEXPOST):latest -f Dockerfile.plexpost . 2>&1 | tee $(LOGS)/build-plexpost.log
-
-$(PLEXPOST): $(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(COMSKIP) $(SLACKPOST) docker
+$(PLEXPOST): docker 
 
 push: $(PLEXPOST)
 ifndef VERSION

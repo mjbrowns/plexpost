@@ -9,10 +9,9 @@ TARGET=/tmp/out
 [ -f /out/comcut ] && rm /out/comcut
 
 echo Cloning comchap git repo
-git clone https://github.com/BrettSheleski/comchap ${BASE}
+git clone --depth=1 https://github.com/BrettSheleski/comchap ${BASE}
 
 cd ${BASE} && make 
-ls -l ${BASE}
 
 umask 022
 EXEDIR=${TARGET}/usr/local/bin
