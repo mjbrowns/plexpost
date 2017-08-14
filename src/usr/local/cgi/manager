@@ -39,6 +39,9 @@ read -r -d '' myCSS << 'EOF' || true
         background-color: #AAAAAA;
         color:#002050;
     }
+    a.logfile {
+        color: #AAAAAA;
+    }
     fieldset.cleanup {
         color: #DDDDDD;
     }
@@ -137,7 +140,7 @@ function pageHeader {
 function doHomeButton {
     echo "<div style=homebtn><form>"
     echo -n '<button type=submit formaction="'
-    echo -n "$HTTP_REFERER"
+    echo -n "${HTTP_REFERER:-/}"
     echo '">Home</button>'
     echo "</form></div>"
 }
@@ -392,6 +395,7 @@ function abortJob {
 function displayLogs {
     local ID="${1:-}"
     [ -z "$ID" ] && return 0
+    echo '<a name="top">'
     echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Job Log: $ID</legend>"
     local LF="$QUEUEDIR/$ID.log"
     local LD="$QUEUEDIR/working-$ID"
@@ -400,13 +404,28 @@ function displayLogs {
         echo "<pre class=logfile>$(<$LF)</pre>"
         echo "</fieldset>"
     fi
+
     if [ -d "$LD" ]; then
-        find $LD -type f -maxdepth 1 -name '*.log' | while read i; do
-            local FN="${i##*/}"
-            echo "<fieldset class=logfile><legend class=logfile>$FN</legend>"
-            echo "<pre class=logfile>$(<$i)</pre>"
-            echo "</fieldset>"
-        done
+        if [ $(find "$LD" -name '*.log' -type f|wc -l) -ge 1 ]; then
+            echo "<fieldset class=logfile><legend class=logfile>Index</legend><ul>"
+
+            find $LD -type f -maxdepth 1 -name '*.log' | while read i; do
+                local FN="${i##*/}"
+                local FR="${FN%%.log}"
+                echo "<li><a class=logfile href=#$FR>$FN</a></li>"
+            done
+            echo "</ul></fieldset>"
+
+            find $LD -type f -maxdepth 1 -name '*.log' | while read i; do
+                local FN="${i##*/}"
+                local FR="${FN%%.log}"
+                echo "<a name=$FR></a>"
+                echo "<fieldset class=logfile><legend class=logfile>$FN</legend>"
+                echo "<pre class=logfile>$(<$i)</pre>"
+                echo "</fieldset>"
+                echo "<a class=logfile href=#top>Top</a>"
+            done
+        fi
     fi
     echo "</fieldset></div>"
 }
@@ -430,6 +449,7 @@ function doShowLogs {
     if [ ${#cgiID[@]} -lt 1 ] ;then
         echo "<p class=err>No Jobs Selected</p>"
     else
+        doHomeButton
         for i in ${cgiID[@]}; do
             displayLogs "$i"
         done 

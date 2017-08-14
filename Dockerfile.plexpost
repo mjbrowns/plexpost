@@ -37,6 +37,7 @@ VOLUME /postdata
 # MAILDOMAIN - sets the domain name for from address rewriting
 # MAILHUB - name/ip address of mail relay.  This must be a relay server; does not support auth.
 # MAILFROM - sets email address that emails from this process should use
+# TRANSCODER - sets the path to the transcoder script you want to use
 # SLACK_HOOK - sets SLACK channel webhook for notifications
 ENV TZ=America/New_York \
     MANAGER_PORT=8080 \
@@ -58,6 +59,7 @@ ENV TZ=America/New_York \
     MAILDOMAIN="" \
     MAILHUB="" \
     MAILFROM="" \
+    TRANSCODER="" \
     SLACK_HOOK=""
 
 ENTRYPOINT ["/init"]

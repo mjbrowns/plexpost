@@ -53,11 +53,11 @@ daily_cleanup() {
         [ -d "${DN}" ] && rm -rf "${DN}"
     done
     if [ "${TSCLEAN:-0}" = "1" ]; then
-        find ${TVDIR:-/dev/null} -mtime +${TSDAYS:-60} -name '*.mkv-ts' | while read FN; do
+        find ${TVDIR:-/dev/null} -mtime +${TSDAYS:-60} -name '*.mkv-orig' | while read FN; do
             do_log "Cleaning ${FN}"
             [ -f "${FN}" ] && rm "${FN}"
         done
-        find ${MVDIR:-/dev/null} -mtime +${TSDAYS:-60} -name '*.mkv-ts' | while read FN; do
+        find ${MVDIR:-/dev/null} -mtime +${TSDAYS:-60} -name '*.mkv-orig' | while read FN; do
             do_log "Cleaning ${FN}"
             [ -f "${FN}" ] && rm "${FN}"
         done

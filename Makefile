@@ -90,12 +90,12 @@ $(TARGET)/init:
 
 s6: prepare $(TARGET)/init
 
-prepare: prepare $(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(SLACKPOST) 
+prepare: $(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(COMSKIP) $(SLACKPOST) 
 
 docker: prepare $(TARGET) $(SOURCE)
 	docker build --build-arg=WRKDIR=$(WRK) --build-arg=SRCDIR=$(SRC) --pull --tag $(PLEXPOST):latest -f Dockerfile.plexpost . 2>&1 | tee $(LOGS)/build-plexpost.log
 
-$(PLEXPOST): $(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(SLACKPOST) docker
+$(PLEXPOST): $(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(COMSKIP) $(SLACKPOST) docker
 
 push: $(PLEXPOST)
 ifndef VERSION

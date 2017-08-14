@@ -1,7 +1,12 @@
 # Change Log
 
+## Version 2.20
+1. Fixed several bugs, including the makefile bug that didn't include comskip in the docker image.  
+1. A *complete* rewrite of the plexprocess code, streamlining operations and making it much more readable.  
+1. Added the TRANSCODER environment variable.  This can be used to pass a path to your own custom script to handle transcoding.  The default transcoder is now in a separate script from the main **plexproces** script for easier customization.
+
 ## Version 2.10
-Complete rebuild of the git structure and build process
+Complete rebuild of the git structure and build process ** This was a buggy release and was pulled **
 
 ## Version 2.01
 Minor bugfix to correct detection of running jobs in the manager web interface.

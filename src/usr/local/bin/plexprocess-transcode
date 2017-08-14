@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+typeset INFILE="$1"
+typeset OUTFILE="$2"
+shift
+shift
+nice HandBrakeCLI -i "$INFILE" -o "$OUTFILE" --no-dvdnav -v 0 \
+    -m -e x264 -q 22.0 -a 1,1 -E copy:ac3,faac -B 160,160 -6 none,dpl2 -R Auto,Auto \
+    -D 0.0,0.0 --audio-copy-mask aac,ac3,dtshd,dts,mp3 --audio-fallback ffac3 \
+    -f mkv --decomb --loose-anamorphic --modulus 2 -m --x264-preset medium --h264-profile high --h264-level 4.1 \
+    $*

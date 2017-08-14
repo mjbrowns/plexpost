@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+[ -f ${QUEUEDIR}/.debug ] && set -x
 
 do_log() {
     echo "${QE} - $@"
@@ -7,7 +8,6 @@ do_log() {
 die() {
     do_log "${@}"
     trap "" SIGINT SIGTERM SIGHUP
-    cleanup
     exit 1
 }
 
@@ -16,113 +16,120 @@ cleanup() {
     [ -d ${WORKDIR} ] && rm -rf ${WORKDIR}
 }
 
-hbcli () {
-    typeset INFILE="$1"
-    typeset OUTFILE="$2"
-    shift
-    shift
-    nice HandBrakeCLI -i "$INFILE" -o "$OUTFILE" --no-dvdnav -v 0 \
-        -m -e x264 -q 22.0 -a 1,1 -E copy:ac3,faac -B 160,160 -6 none,dpl2 -R Auto,Auto \
-        -D 0.0,0.0 --audio-copy-mask aac,ac3,dtshd,dts,mp3 --audio-fallback ffac3 \
-        -f mkv --decomb --loose-anamorphic --modulus 2 -m --x264-preset medium --h264-profile high --h264-level 4.1 \
-        $*
+setInputFile() {
+    IF="$1"  # full file path
+    SRCDIR="${IF%/*}"   # just the directory portion, e.g. dirname
+    SRCFN="${IF##*/}"   # base filename no directory, e.g. basename
+    SRCFNB=${SRCFN%.*}  # filename without extension
+    SRCEXT=${SRCFN##*.} # file extension
+    OF="${SRCDIR}/${SRCFNB}.mkv"
+    OF2="${SRCDIR}/${SRCFNB}.mkv-orig"
+    [ -z "${IF}" ]  && die "ERROR: (setInputFile) - Calculated input file is blank!"
+    [ -f "${IF}" ]  || die "ERROR: (setInputFile) - Input file doesn't exist: ${IF}"
+    [ -f "${OF2}" ] && die "ERROR: (setInputFile) - Output file already exists: ${OF2}"
+    ln -sf "${IF}" "${WF1}" || die "ERROR: (setInputFile) - Failed to link input to ${WF1}"
 }
-[ -f ${QUEUEDIR}/.debug ] && set -x
-QE=$1
-QF=${QUEUEDIR}/${QE}.job
-QFD=${QUEUEDIR}/${QE}.working
-QFS=${QUEUEDIR}/${QE}.save
 
-SRCFN=$(< ${QF})
-SRCEXT=${SRCFN##*.}
-SRCFNB=${SRCFN%.*}
+findSourceFile() {
+    local FN="$1"
+    local FNB="${FN%.*}"
 
-do_log "Processing ${SRCFNB}"
-mv "${QF}" "${QFD}"
+    _check=$(find ${TVDIR} ${MVDIR} -type f -name "${FNB}.*" |wc -l)
+    [ ${_check} -gt 1 ] && die "ERROR: multiple input files found!"
+    [ ${_check} -eq 0 ] && die "ERROR: couldn't find input file ($FNB) in library!"
+    local FP=$(find ${TVDIR} ${MVDIR} -name "${FNB}.*")
+    setInputFile "$FP"
+}
 
-# See if we can find the file in the TVDIR or MVDIR path
-SRCDIR=$(find ${TVDIR} ${MVDIR} -name "${SRCFN}" -printf "%h\n")
-_check=$(find ${TVDIR} ${MVDIR} -name "${SRCFN}" -printf "%h\n"|wc -l)
-[ ${_check} -gt 1 ] && die "ERROR: multiple input files found!"
-[ ${_check} -eq 0 ] && die "ERROR: couldn't find input file ($SRCFN) in library!"
+doComchap() {
+    echo "INFO: (doComchap) - Processing ${SRCFNB}" 
+    /usr/local/bin/comchap \
+        --verbose \
+        --ffmpeg="$FFMPEG" \
+        --comskip="$COMSKIP" \
+        --keep-edl \
+        --comskip-ini="${COMSKIPINI}" \
+        "${WF1}" "${WF2}" \
+        &> ${WORKDIR}/comchap.log || die "ERROR: (doComchap) - comchap exited with error $?"
+    return 0
+}
 
-WORKDIR=${QUEUEDIR}/working-${QE}
-mkdir -p ${WORKDIR}
-trap "die 'Caught signal'" SIGINT SIGTERM SIGHUP
-cd ${WORKDIR}
+doComcut() {
+    if [ "${COMCUT}" != "1" ]; then
+        echo "INFO: (doComcut) - Comcut skipped for ${SRCFNB}" 
+        WF3="$WF2"
+        return 0
+    fi
+    echo "INFO: (doComcut) - Processing ${SRCFNB}" 
+    /usr/local/bin/comcut \
+        --ffmpeg="${FFMPEG}" \
+        --comskip="${COMSKIP}" \
+        --comskip-ini="${COMSKIPINI}" \
+        "${WF2}" "${WF3}" \
+        &> ${WORKDIR}/comcut.log || die "ERROR: comcut exited with error $?"
+    return 0
+}
+
+doTranscode() {
+    echo "INFO: (doTranscode) - Processing ${SRCFNB}" 
+    [ -z "${TRANSCODER}" ] && TRANSCODER="/usr/local/bin/plexprocess-transcode"
+    
+    ${TRANSCODER} "${WF3}" "${WF4}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
+    OLDSZ=$(stat -Lc %s "${WF3}")
+    NEWSZ=$(stat -Lc %s "${WF4}")
+    if [ $((${OLDSZ}/5 > ${NEWSZ})) -ne 0 ]; then
+        die "WARNING: (doTranscode) Transcoded file smaller than expected ($OLDSZ vs $NEWSZ)!"
+    fi
+    return 0
+}
+
+doFinalMove() {
+    [ -f "$WF4" ] || die "ERROR: (doFinalMove) Transcoded output file not found! ($WF4)"
+    echo "INFO: (doFinalMove) - Renaming original file to ${OF2}"
+    mv "${IF}" "${OF2}" || die "ERROR: (doFinalMove) Failed to rename original file!"
+    echo "INFO: (doFinalMove) - Moving transcoded file to media directory: ${OF}"
+    mv "${WF4}" "${OF}" || die "ERROR: (doFinalMove) Failed to move transcoded file to media directory!"
+    if [ "${REMOVETS}" = "1" ];then
+        rm "${OF2}"
+    fi
+    return 0
+}
+
 #
 # main processing code below
 #
 
-IF="${SRCDIR}/${SRCFN}"
-OF="${SRCDIR}/${SRCFNB}.mkv"
-OFTS="${SRCDIR}/${SRCFNB}.mkv-ts"
-WF1="${WORKDIR}/source.ts"
-WF2="${WORKDIR}/source.mkv"
-WF3="${WORKDIR}/transcode-source.mkv"
+QE=$1
+QF=${QUEUEDIR}/${QE}.job
+QFD=${QUEUEDIR}/${QE}.working
+QFS=${QUEUEDIR}/${QE}.save
+WORKDIR=${QUEUEDIR}/working-${QE}
+WF1="${WORKDIR}/original.mkv"
+WF2="${WORKDIR}/comchap.mkv"
+WF3="${WORKDIR}/comcut.mkv"
 WF4="${WORKDIR}/transcoded.mkv"
-
-if [ "${SRCEXT}" = "mkv" ] ;then
-    IFN2="${SRCFNB}.mkv-orig"
-    IF2="${SRCDIR}/${IFN2}"
-    do_log "Moving source to $IF2"
-    mv "${IF}" "${IF2}"
-    IF="${IF2}"
-    echo "$IFN2" > "${QFD}"
-fi
-
-if [ -z "${IF}" ];then
-    die "ERROR: Calculated input file is blank"
-fi
-if [ -f "${OF}" ];then
-    die "ERROR: Output file already exists"
-fi
-if [ ! -f "${IF}" ];then
-    die "ERROR: Input file does not exist: ${IF}"
-fi
-
-# link .ts file to working-dir/source.ts
-ln -sf "${IF}" "${WF1}" || die "ERROR: failed to link ${WF1}"
-
 FFMPEG="ffmpeg -fflags +genpts -analyzeduration 2147483647 -probesize 2147483647"
 COMSKIP="comskip -q -n"
 COMSKIPINI="/usr/local/etc/comskip.ini"
 
-# run comchap on working-dir/source.ts to create working-dir/source.mkv
-do_log "Starting comchap"
-/usr/local/bin/comchap --ffmpeg="$FFMPEG" --comskip="$COMSKIP" --keep-edl --comskip-ini="${COMSKIPINI}" "${WF1}" "${WF2}" > ${WORKDIR}/comchap.log 2>&1 || die "ERROR: comchap exited with error $?"
-# move working-dir/source.mkv to target-dir/{FN}.mkv-ts
-mv "${WF2}" "${OFTS}" || die "ERROR: failed copying source mkv to target directory"
-# remove original .ts file and its link working-dir/source.ts
-rm -f "${IF}"
-rm -f "${WF1}" 
-# if comcut
-#   link target-dir/{FN}.mkv-ts to working-dir/source.mkv 
-#   comcut working-dir/source.mkv to working-dir/transcode-source.mkv
-# else
-#   link target-dir/{FN}.mkv-ts to working-dir/transcode-source.mkv 
-# fi
-if [ "${COMCUT}" = "1" ]; then
-    ln -sf "${OFTS}" "${WF2}" || die "ERROR: failed to link ${WF2}"
-    do_log "Starting comcut"
-    /usr/local/bin/comcut --ffmpeg="${FFMPEG}" --comskip="${COMSKIP}" --comskip-ini="${COMSKIPINI}" "${WF2}" "${WF3}" > ${WORKDIR}/comcut.log 2>&1 || die "ERROR: comcut exited with error $?"
-else
-    ln -sf "${OFTS}" "${WF3}" || die "ERROR: failed to link ${WF3}"
-fi
-# Handbrake working-dir/transcode-source.mkv to working-dir/transcoded.mkv
-do_log "Starting transcode (HandBrake)"
-hbcli "${WF3}" "${WF4}" > ${WORKDIR}/transcode.log 2>&1 || die "ERROR: HandBrakeCLI exited with error $?"
-OLDSZ=$(stat -Lc %s "${WF3}")
-NEWSZ=$(stat -Lc %s "${WF4}")
-if [ $((${OLDSZ}/10 > ${NEWSZ})) -ne 0 ]; then
-    die "WARNING: Transcoded file is too small!"
-fi
-# move transcoded.mkv to target-dir/{FN}.mkv
-mv "${WF4}" "${OF}" || die "ERROR: failed to move transcoded output to ${OF}"
+mkdir -p ${WORKDIR} || die "ERROR: Couldn't create working directory ${WORKDIR}"
+cd ${WORKDIR} || die "ERROR: Couldn't change to working directory ${WORKDIR}"
+trap "die 'SIGNAL: Caught signal'" SIGINT SIGTERM SIGHUP
 
-if [ "${REMOVETS}" = "1" ];then
-    rm "${OFTS}"
-fi
+#
+# now we pull in the queue job file and we find the source file.
+# if there are too many matches we will abort.
+#
+[ -f "${QF}" ] || die "ERROR: Couldn't find job queue file ${QF}"
+do_log "Processing ${SRCFNB}"
+mv "${QF}" "${QFD}" || die "ERROR: Could not transition job entry from queued to working"
+
+findSourceFile "$(< ${QFD})"
+
+doComchap
+doComcut
+doTranscode
+doFinalMove
 
 #
 # all done

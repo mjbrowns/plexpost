@@ -4,3 +4,4 @@
 /etc/services.d/manager/run false root 0755 0755
 /usr/local/web/ true root 0755 0755
 /usr/local/cgi/ true root 0755 0755
+/usr/local/lib/comchap true root 0644
