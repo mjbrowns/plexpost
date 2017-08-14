@@ -393,7 +393,9 @@ function abortJob {
     if [ -z "${idPID["$ID"]}" ]; then
         echo "<font color=#C00000>Job $ID is not running, can't abort it</font><br>" 
     else
-        kill "${idPID["$ID"]}" && echo "Aborted Job $ID<br>" || echo "<font color=#C00000>Failed to abort Job ID $ID</font><br>"
+        local PD="${idPID["$ID"]}"
+        local PGRP="$(ps -o pgrp= $PD)"
+        pkill -g $PGRP && echo "Aborted Job $ID<br>" || echo "<font color=#C00000>Failed to abort Job ID $ID</font><br>"
     fi
 }
 
@@ -471,12 +473,15 @@ function retryJob {
     fi
     local FN="${QUEUEDIR}/${ID}.working"
     local JF="${QUEUEDIR}/${ID}.job"
+    local LF="${QUEUEDIR}/${ID}.log"
     local DN="${QUEUEDIR}/working-${ID}"
     if [ -f "$FN" ] ; then
         [ -d "$DN" ] && rm -rf "$DN" || true
-        mv "$FN" "$JF"
+        [ -f "$LF" ] && rm -f "$LF" || true
         echo "Retrying $ID<br>"
+        mv "$FN" "$JF" || echo "ERROR: Failed to insert stale job into working queue"
     fi
+    return 0
 }
 
 function doRetryJobs {
@@ -520,9 +525,11 @@ case "$cgiAction" in
         doShowLogs
         ;;
     retry)
+        doHeader
         doRetryJobs 
         ;;
     *)
+        doHeader
         pageHeader "Invalid Function"
         echo "${cgiFUNCTION}"
         doHomeButton

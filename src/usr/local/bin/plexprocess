@@ -72,7 +72,7 @@ doComcut() {
 
 doTranscode() {
     [ -z "${TRANSCODER}" ] && TRANSCODER="/usr/local/bin/plexprocess-transcode"
-    echo "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})
+    echo "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})"
     
     ${TRANSCODER} "${WF3}" "${WF4}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
     OLDSZ=$(stat -Lc %s "${WF3}")

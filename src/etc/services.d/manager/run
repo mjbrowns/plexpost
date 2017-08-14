@@ -1,4 +1,4 @@
 #!/usr/bin/with-contenv sh
 echo "Starting tinycgi"
 [ -z "$MANAGER_PORT" ] && export MANAGER_PORT=8080
-exec s6-setuidgid ${COMSKIP_USER} /usr/local/bin/tinycgi -H /usr/local/web -C /usr/local/cgi -d default.html -p ${MANAGER_PORT} -e "QUEUEDIR" < /dev/null
+exec s6-setuidgid ${COMSKIP_USER} /usr/local/bin/tinycgi -q -H /usr/local/web -C /usr/local/cgi -d default.html -p ${MANAGER_PORT} -e "QUEUEDIR" < /dev/null
