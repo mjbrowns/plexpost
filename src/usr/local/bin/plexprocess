@@ -42,7 +42,7 @@ findSourceFile() {
 }
 
 doComchap() {
-    echo "INFO: (doComchap) - Processing ${SRCFNB}" 
+    echo "INFO: (doComchap) - Starting Commercial detection and marking"
     /usr/local/bin/comchap \
         --verbose \
         --ffmpeg="$FFMPEG" \
@@ -56,11 +56,11 @@ doComchap() {
 
 doComcut() {
     if [ "${COMCUT}" != "1" ]; then
-        echo "INFO: (doComcut) - Comcut skipped for ${SRCFNB}" 
+        echo "INFO: (doComcut) - Comcut skipped due to COMCUT flag setting"
         WF3="$WF2"
         return 0
     fi
-    echo "INFO: (doComcut) - Processing ${SRCFNB}" 
+    echo "INFO: (doComcut) - Starting Commercial Cutting"
     /usr/local/bin/comcut \
         --ffmpeg="${FFMPEG}" \
         --comskip="${COMSKIP}" \
@@ -71,8 +71,8 @@ doComcut() {
 }
 
 doTranscode() {
-    echo "INFO: (doTranscode) - Processing ${SRCFNB}" 
     [ -z "${TRANSCODER}" ] && TRANSCODER="/usr/local/bin/plexprocess-transcode"
+    echo "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})
     
     ${TRANSCODER} "${WF3}" "${WF4}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
     OLDSZ=$(stat -Lc %s "${WF3}")
@@ -121,7 +121,7 @@ trap "die 'SIGNAL: Caught signal'" SIGINT SIGTERM SIGHUP
 # if there are too many matches we will abort.
 #
 [ -f "${QF}" ] || die "ERROR: Couldn't find job queue file ${QF}"
-do_log "Processing ${SRCFNB}"
+do_log "INFO: (plexprocess) - Starting ${SRCFNB}"
 mv "${QF}" "${QFD}" || die "ERROR: Could not transition job entry from queued to working"
 
 findSourceFile "$(< ${QFD})"
@@ -134,7 +134,7 @@ doFinalMove
 #
 # all done
 #
-do_log "Success"
+do_log "INFO: (plexprocess) - Successful completion."
 trap "" SIGINT SIGTERM SIGHUP
 mv "${QFD}" "${QFS}"
 cleanup 
