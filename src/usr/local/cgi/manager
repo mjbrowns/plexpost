@@ -127,7 +127,7 @@ function doHeader {
     echo "Content-Type: text/html"
     echo ""
     echo "<head>"
-    if [ "$1" = "refresh" ]; then
+    if [ "${1:-}" = "refresh" ]; then
         echo "<meta http-equiv=refresh content=30>"
     fi
     echo "<style>${myCSS}</style>"
@@ -252,6 +252,7 @@ function doListSaved {
 
         echo "</table>"
         echo "<div>"
+        echo "<button type=submit name=action value=logs>Show Logs</button>"
         echo "<button type=submit name=action value=delete>Delete Selected</button>"
         echo "<button type=submit name=action value=delcomp>Delete All</button>"
         echo "</div>"
