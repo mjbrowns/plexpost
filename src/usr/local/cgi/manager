@@ -127,9 +127,13 @@ function doHeader {
     echo "Content-Type: text/html"
     echo ""
     echo "<head>"
+    if [ "$1" = "refresh" ]; then
+        echo "<meta http-equiv=refresh content=10>"
+    fi
     echo "<style>${myCSS}</style>"
     echo "<title>PlexPost Manager</title>"
     echo "</head>"
+    echo "<body>"
 }
 
 function pageHeader {
@@ -488,42 +492,34 @@ function doRetryJobs {
     doHomeButton
 }
 
-doHeader
 getParams
 loadData
 
-echo "<body>"
 
 [ -z "$cgiAction" ] && cgiAction=list
 case "$cgiAction" in 
     list)
+        doHeader refresh
         doList
         ;;
     delete)
+        doHeader
         doDelete
         ;;
     delcomp)
+        doHeader
         doDeleteAllCompleted
         ;;
     abort)
+        doHeader
         doAbort
         ;;
     logs)
+        doHeader refresh
         doShowLogs
         ;;
     retry)
-        doRetryJobs
-        ;;
-    test)
-        pageHeader "Test/Debug"
-        echo "<hr><pre class=logfile>"
-        loadData
-        echo ""
-        echo "Sorted IDs:"
-        for i in "${idSorted[@]}"; do 
-            printf "%-40s %18s %3s %10u %s\n" "$i" "${idShowDate[$i]}" "${idState[$i]}" "${idPID[$i]}" "${idFileName[$i]}"
-        done
-        echo "</pre>"
+        doRetryJobs 
         ;;
     *)
         pageHeader "Invalid Function"
