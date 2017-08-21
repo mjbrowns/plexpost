@@ -59,3 +59,8 @@ if [ ! -z "$MAILTO" ]; then
     echo "rewriteDomain=${MAILDOMAIN}" >> /etc/ssmtp/ssmtp.conf
     echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
 fi 
+
+if [ -d /config ]; then
+    chown -R $COMSKIP_USER:$COMSKIP_GROUP /config
+    chmod -R 774 /config
+fi
