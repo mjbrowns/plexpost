@@ -1,0 +1,45 @@
+#!/usr/bin/awk -f
+
+/^\s*$/{next}
+/^\s*;/{next}
+# clean out entries we don't use
+/^\s*cuttermaran/{next}
+/^\s*mpeg2schnitt/{next}
+/^\s*avisynth/{next}
+/^\s*dvrcut/{next}
+/^\s*windowtitle/{next}
+/^\s*cutscene/{next}
+# delete the following options, we force those at the end
+/^\s*output_/{next}
+/^\s*sage_/{next}
+/^\s*live_tv/{next}
+
+match($0,/^\s*(\S+)=(\S+)/,a){print a[1] "=" a[2]}
+
+END {
+    print "output_edl=1"
+    print "output_avisynth=0"
+    print "output_bsplayer=0"
+    print "output_btv=0"
+    print "output_cuttermaran=0"
+    print "output_data=0"
+    print "output_demux=0"
+    print "output_dvrcut=0"
+    print "output_dvrmstb=0"
+    print "output_edlx=0"
+    print "output_framearray=0"
+    print "output_mls=0"
+    print "output_mpeg2schnitt=0"
+    print "output_mpgtx=0"
+    print "output_projectx=0"
+    print "output_vcf=0"
+    print "output_vdr=0"
+    print "output_videoredo=0"
+    print "output_videoredo3=0"
+    print "output_womble=0"
+    print "output_zoomplayer_chapter=0"
+    print "output_zoomplayer_cutlist=0"
+    print "live_tv=0"
+    print "sage_framenumber_bug=0"
+    print "sage_minute_bug=0"
+}

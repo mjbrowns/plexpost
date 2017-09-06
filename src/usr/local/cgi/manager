@@ -191,7 +191,7 @@ function loadData {
             idLogfile["${ID}"]="N"
         fi
         local SFN="$(<${QUEUEDIR}/$FN)"
-        local SN="${SFN%%.mkv*}"
+        local SN="${SFN%.*}"
         local sname="${SN%% - *}"
         SN="${SN#* - }"
         local eid="${SN%% - *}"

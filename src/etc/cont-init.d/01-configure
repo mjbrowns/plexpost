@@ -60,7 +60,11 @@ if [ ! -z "$MAILTO" ]; then
     echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
 fi 
 
-if [ -d /config ]; then
-    chown -R $COMSKIP_USER:$COMSKIP_GROUP /config
-    chmod -R 774 /config
+mkdir -p "${COMSKIP_INI}"
+if [ ! -f "${COMSKIP_INI}/comskip.ini" ] ;then
+    cp /usr/local/etc/comskip.ini "${COMSKIP_INI}/" 
+fi
+if [ -d "${COMSKIP_INI}" ]; then
+    chown -R $COMSKIP_USER:$COMSKIP_GROUP "${COMSKIP_INI}"
+    chmod -R 774 "${COMSKIP_INI}"
 fi

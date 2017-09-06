@@ -9,7 +9,7 @@ RUN ( . /etc/lsb-release; \
     )
 RUN ( . /etc/lsb-release; \
     echo "Installing prerequisites"; \
-    apt-get -qq -y --no-install-recommends install ffmpeg libargtable2-0 jq ssmtp curl ca-certificates tzdata; \
+    apt-get -qq -y --no-install-recommends install ffmpeg libargtable2-0 jq ssmtp curl ca-certificates tzdata gawk; \
     apt-get -qq -y clean ; \
     )
 RUN ( . /etc/lsb-release; \
@@ -39,12 +39,14 @@ VOLUME /postdata
 # MAILFROM - sets email address that emails from this process should use
 # TRANSCODER - sets the path to the transcoder script you want to use
 # SLACK_HOOK - sets SLACK channel webhook for notifications
+# COMSKIP_INI - sets the directory where comskip.ini files are found.  Catchall comskip file will be comskip.ini.  Config is filters.cfg 
 ENV TZ=America/New_York \
     MANAGER_PORT=8080 \
     COMSKIP_UID=113 \
     COMSKIP_GID=123 \
     COMSKIP_USER=plex \
     COMSKIP_GROUP=plex \
+    COMSKIP_INI=/config \
     TVDIR=/media/tv \ 
     MVDIR=/media/movies \
     POSTDATA=/postdata \

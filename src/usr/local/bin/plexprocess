@@ -33,6 +33,7 @@ setInputFile() {
 findSourceFile() {
     local FN="$1"
     local FNB="${FN%.*}"
+    SHOWNAME=${FN%% -*}
 
     _check=$(find ${TVDIR} ${MVDIR} -type f -name "${FNB}.*" |wc -l)
     [ ${_check} -gt 1 ] && die "ERROR: multiple input files found!"
@@ -42,13 +43,13 @@ findSourceFile() {
 }
 
 doComchap() {
-    echo "INFO: (doComchap) - Starting Commercial detection and marking"
+    do_log "INFO: (doComchap) - Starting Commercial detection and marking"
     /usr/local/bin/comchap \
         --verbose \
         --ffmpeg="$FFMPEG" \
         --comskip="$COMSKIP" \
         --keep-edl \
-        --comskip-ini="${COMSKIPINI}" \
+        --comskip-ini="${WORKDIR}/comskip.ini" \
         "${WF1}" "${WF2}" \
         &> ${WORKDIR}/comchap.log || die "ERROR: (doComchap) - comchap exited with error $?"
     return 0
@@ -56,15 +57,15 @@ doComchap() {
 
 doComcut() {
     if [ "${COMCUT}" != "1" ]; then
-        echo "INFO: (doComcut) - Comcut skipped due to COMCUT flag setting"
+        do_log "INFO: (doComcut) - Comcut skipped due to COMCUT flag setting"
         WF3="$WF2"
         return 0
     fi
-    echo "INFO: (doComcut) - Starting Commercial Cutting"
+    do_log "INFO: (doComcut) - Starting Commercial Cutting"
     /usr/local/bin/comcut \
         --ffmpeg="${FFMPEG}" \
         --comskip="${COMSKIP}" \
-        --comskip-ini="${COMSKIPINI}" \
+        --comskip-ini="${WORKDIR}/comskip.ini" \
         "${WF2}" "${WF3}" \
         &> ${WORKDIR}/comcut.log || die "ERROR: comcut exited with error $?"
     return 0
@@ -72,7 +73,7 @@ doComcut() {
 
 doTranscode() {
     [ -z "${TRANSCODER}" ] && TRANSCODER="/usr/local/bin/plexprocess-transcode"
-    echo "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})"
+    do_log "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})"
     
     ${TRANSCODER} "${WF3}" "${WF4}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
     OLDSZ=$(stat -Lc %s "${WF3}")
@@ -85,14 +86,42 @@ doTranscode() {
 
 doFinalMove() {
     [ -f "$WF4" ] || die "ERROR: (doFinalMove) Transcoded output file not found! ($WF4)"
-    echo "INFO: (doFinalMove) - Renaming original file to ${OF2}"
+    do_log "INFO: (doFinalMove) - Renaming original file to ${OF2}"
     mv "${IF}" "${OF2}" || die "ERROR: (doFinalMove) Failed to rename original file!"
-    echo "INFO: (doFinalMove) - Moving transcoded file to media directory: ${OF}"
+    do_log "INFO: (doFinalMove) - Moving transcoded file to media directory: ${OF}"
     mv "${WF4}" "${OF}" || die "ERROR: (doFinalMove) Failed to move transcoded file to media directory!"
     if [ "${REMOVETS}" = "1" ];then
         rm "${OF2}"
     fi
     return 0
+}
+
+prepComskip() {
+    # look for filters file and if its there see if we can find a match
+    if [ -r "${COMSKIP_INI}/filters.cfg" ]; then
+        while read f; do
+            local INI="${f##*=}"
+            local MATCH="${f%%=*}"
+            if [ ! -f "${COMSKIP_INI}/$INI" -o ! -r "${COMSKIP_INI}/$INI" ]; then
+                do_log "ERROR: (prepComskip) - Ini file in filters.cfg not found or not readable ($INI)"
+                continue
+            fi
+            if [[ $SHOWNAME == $MATCH ]] ;then
+                do_log "INFO: (prepComskip) - Using comskip ini file ${COMSKIP_INI}/$INI"
+                /usr/local/bin/clean-comskipini < "${COMSKIP_INI}/$INI" > "${WORKDIR}/comskip.ini"
+                return 0
+            fi
+        done < "${COMSKIP_INI}/filters.cfg"
+    fi
+    # Fallback - if we didn't get a filter match, we use the default comskip.ini in the config directory
+    if [ -f "${COMSKIP_INI}/comskip.ini" ];then
+        do_log "INFO: (prepComskip) - Using comskip ini file ${COMSKIP_INI}/comskip.ini"
+        /usr/local/bin/clean-comskipini < "${COMSKIP_INI}/comskip.ini" > "${WORKDIR}/comskip.ini"
+        return 0
+    fi 
+    # Fallback2 - if we got here something is wrong with the config directory; use the provided one
+    do_log "INFO: (prepComskip) - Using comskip ini file /usr/local/etc/comskip.ini"
+    /usr/local/bin/clean-comskipini < "/usr/local/etc/comskip.ini" > "${WORKDIR}/comskip.ini"
 }
 
 #
@@ -110,7 +139,6 @@ WF3="${WORKDIR}/comcut.mkv"
 WF4="${WORKDIR}/transcoded.mkv"
 FFMPEG="ffmpeg -fflags +genpts -analyzeduration 2147483647 -probesize 2147483647"
 COMSKIP="comskip -q -n"
-COMSKIPINI="/usr/local/etc/comskip.ini"
 
 mkdir -p ${WORKDIR} || die "ERROR: Couldn't create working directory ${WORKDIR}"
 cd ${WORKDIR} || die "ERROR: Couldn't change to working directory ${WORKDIR}"
@@ -126,6 +154,7 @@ mv "${QF}" "${QFD}" || die "ERROR: Could not transition job entry from queued to
 
 findSourceFile "$(< ${QFD})"
 
+prepComskip
 doComchap
 doComcut
 doTranscode

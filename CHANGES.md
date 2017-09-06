@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 2.30
+1. Implemented a directory to hold comskip.ini variants and a mechanism to have plexprocess switch comskip.ini files based on showname matching filters.  See readme for details.
+
 ## Version 2.21
 1. simplified the makefile a bit.
 1. Moved the buildenv Dockerfile out and published that container separately on Dockerhub (see mjbrowns/buildenv)

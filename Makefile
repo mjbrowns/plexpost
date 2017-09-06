@@ -19,12 +19,14 @@ SLACKPOST=$(TARGET)/usr/local/bin/slackpost
 DIRS=$(TARGET) $(LOGS)
 ELEMENTS=$(TARGET)/init $(TINYCGI) $(COMCHAP) $(COMCUT) $(COMSKIP) $(SLACKPOST) 
 
+.PHONY: all
 all: $(PLEXPOST) 
 
 .PHONY: clean
 clean: 
 	$(RM) -r $(DIRS)
 
+.PHONY: tinycgi
 tinycgi: $(TINYCGI)
 
 $(TINYCGI): src/tinycgi.go build/make-tinycgi
@@ -36,6 +38,8 @@ $(TINYCGI): src/tinycgi.go build/make-tinycgi
 		-u $(MYUID):$(MYGID) \
         $(BUILDENV) bash -c "/tmp/build/make-tinycgi $(PACK)" | tee $(LOGS)/build-tinycgi.log
 
+.PHONY: comchap
+.PHONY: comcut
 comchap: $(COMCHAP)
 comcut: $(COMCUT)
 
@@ -49,6 +53,7 @@ $(COMCHAP): build/make-comchap
 		-u $(MYUID):$(MYGID) \
         $(BUILDENV) bash -c /tmp/build/make-comchap | tee $(LOGS)/build-comchap.log
 
+.PHONY: comskip
 comskip: $(COMSKIP)
 $(COMSKIP): build/make-comskip
 	mkdir -p $(DIRS)
@@ -59,6 +64,7 @@ $(COMSKIP): build/make-comskip
 		-u $(MYUID):$(MYGID) \
         $(BUILDENV) bash -c /tmp/build/make-comskip | tee $(LOGS)/build-comskip.log
 
+.PHONY:slackpost
 slackpost: $(SLACKPOST)
 $(SLACKPOST): build/make-slackpost
 	mkdir -p $(DIRS)
@@ -69,18 +75,22 @@ $(SLACKPOST): build/make-slackpost
 		-u $(MYUID):$(MYGID) \
         $(BUILDENV) bash -c "/tmp/build/make-slackpost $(PACK)" | tee $(LOGS)/build-slackpost.log
 
+.PHONY:s6
 s6: $(TARGET)/init
 $(TARGET)/init: 
 	mkdir -p $(DIRS)
 	build/get-s6 $(TARGET) 2>&1 | tee $(LOGS)/get-s6.log
 
+.PHONY:prepare
 prepare: $(ELEMENTS)
 
+.PHONY:docker
 docker: $(ELEMENTS)
 	docker build --build-arg=WRKDIR=$(WRK) --build-arg=SRCDIR=$(SRC) --pull --tag $(PLEXPOST):latest . 2>&1 | tee $(LOGS)/build-plexpost.log
 
 $(PLEXPOST): docker 
 
+.PHONY:push
 push: $(PLEXPOST)
 ifndef VERSION
 	@echo You must specify a version to push
