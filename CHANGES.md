@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 2.31
+Reworked the processing code with the following changes:
+1. Rather than relying on comchap/comscut to successfully run the comskip proces, we now run that separately.
+1. If commercials are not found, we skip comchap/comcut altogether and set a flag to highlight the job with a warning in the manager
+1. If commercials are found, we only run comchap/comcut based on the setting of the COMCUT environment variable.
+1. Added a retry-job feature to the manager for saved (successful/warning) jobs.
+
 ## Version 2.30
 1. Implemented a directory to hold comskip.ini variants and a mechanism to have plexprocess switch comskip.ini files based on showname matching filters.  See readme for details.
 

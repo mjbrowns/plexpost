@@ -42,13 +42,42 @@ findSourceFile() {
     setInputFile "$FP"
 }
 
+doComskip() {
+    do_log "INFO: (doComskip) - Starting Commercial detection"
+    rm -f "${WORKDIR}/*.edl"
+    ${COMSKIP} --ini="${WORKDIR}/comskip.ini" "${WF1}" &> ${WORKDIR}/comskip.log
+    STS=$?
+    case $STS in
+        0)  # everything went well, we think
+            do_log "INFO: (doComskip) - Commercials were detected"
+            ;;
+        1)  # success, but no commercials detected
+            do_log "WARNING: (doComskip) - No Commercials Detected" 
+            echo "WARNING: (doComskip) - No Commercials Detected" > ${QFW}
+            [ -f "${WF1%.*}.edl" ] && rm "${WF1%.*}.edl"
+            return 0
+            ;;
+        *)  die "ERROR: (doComskip) - comskip exited with error $STS"
+            ;;
+    esac
+    if [ ! -f "${WF1%.*}.edl" ]; then 
+        do_log "WARNING: (doComskip) - EDL file not found"
+        echo "WARNING: (doComskip) - EDL file not found" > ${QFW}
+        return 0
+    fi
+}
+
 doComchap() {
-    do_log "INFO: (doComchap) - Starting Commercial detection and marking"
+    do_log "INFO: (doComchap) - Marking Commercials in source file"
+    if [ -f "${WF1%.*}.edl" ] ; then
+        do_log "INFO: (doComchap) - No EDL file available, skipping"
+        ln -sf "${WF1}" "${WF2}"
+        return 0
+    fi
     /usr/local/bin/comchap \
         --verbose \
         --ffmpeg="$FFMPEG" \
         --comskip="$COMSKIP" \
-        --keep-edl \
         --comskip-ini="${WORKDIR}/comskip.ini" \
         "${WF1}" "${WF2}" \
         &> ${WORKDIR}/comchap.log || die "ERROR: (doComchap) - comchap exited with error $?"
@@ -56,17 +85,17 @@ doComchap() {
 }
 
 doComcut() {
-    if [ "${COMCUT}" != "1" ]; then
-        do_log "INFO: (doComcut) - Comcut skipped due to COMCUT flag setting"
-        WF3="$WF2"
+    do_log "INFO: (doComcut) - Starting Commercial Cutting"
+    if [ ! -f "${WF1%.*}.edl" ]; then
+        do_log "INFO: (doComcut) - No EDL file available, skipping"
+        ln -sf "${WF1}" "${WF2}"
         return 0
     fi
-    do_log "INFO: (doComcut) - Starting Commercial Cutting"
     /usr/local/bin/comcut \
         --ffmpeg="${FFMPEG}" \
         --comskip="${COMSKIP}" \
         --comskip-ini="${WORKDIR}/comskip.ini" \
-        "${WF2}" "${WF3}" \
+        "${WF1}" "${WF2}" \
         &> ${WORKDIR}/comcut.log || die "ERROR: comcut exited with error $?"
     return 0
 }
@@ -75,21 +104,22 @@ doTranscode() {
     [ -z "${TRANSCODER}" ] && TRANSCODER="/usr/local/bin/plexprocess-transcode"
     do_log "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})"
     
-    ${TRANSCODER} "${WF3}" "${WF4}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
-    OLDSZ=$(stat -Lc %s "${WF3}")
-    NEWSZ=$(stat -Lc %s "${WF4}")
+    ${TRANSCODER} "${WF2}" "${WF3}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
+    OLDSZ=$(stat -Lc %s "${WF2}")
+    NEWSZ=$(stat -Lc %s "${WF3}")
     if [ $((${OLDSZ}/5 > ${NEWSZ})) -ne 0 ]; then
-        die "WARNING: (doTranscode) Transcoded file smaller than expected ($OLDSZ vs $NEWSZ)!"
+        echo "WARNING: (doTranscode) Transcoded file smaller than expected ($OLDSZ vs $NEWSZ)!" > "${QFW}"
+        do_log "WARNING: (doTranscode) Transcoded file smaller than expected ($OLDSZ vs $NEWSZ)!"
     fi
     return 0
 }
 
 doFinalMove() {
-    [ -f "$WF4" ] || die "ERROR: (doFinalMove) Transcoded output file not found! ($WF4)"
+    [ -f "$WF3" ] || die "ERROR: (doFinalMove) Transcoded output file not found! ($WF3)"
     do_log "INFO: (doFinalMove) - Renaming original file to ${OF2}"
     mv "${IF}" "${OF2}" || die "ERROR: (doFinalMove) Failed to rename original file!"
     do_log "INFO: (doFinalMove) - Moving transcoded file to media directory: ${OF}"
-    mv "${WF4}" "${OF}" || die "ERROR: (doFinalMove) Failed to move transcoded file to media directory!"
+    mv "${WF3}" "${OF}" || die "ERROR: (doFinalMove) Failed to move transcoded file to media directory!"
     if [ "${REMOVETS}" = "1" ];then
         rm "${OF2}"
     fi
@@ -132,11 +162,12 @@ QE=$1
 QF=${QUEUEDIR}/${QE}.job
 QFD=${QUEUEDIR}/${QE}.working
 QFS=${QUEUEDIR}/${QE}.save
+QFW=${QUEUEDIR}/${QE}.warn
+
 WORKDIR=${QUEUEDIR}/working-${QE}
 WF1="${WORKDIR}/original.mkv"
-WF2="${WORKDIR}/comchap.mkv"
-WF3="${WORKDIR}/comcut.mkv"
-WF4="${WORKDIR}/transcoded.mkv"
+WF2="${WORKDIR}/comproc.mkv"
+WF3="${WORKDIR}/transcoded.mkv"
 FFMPEG="ffmpeg -fflags +genpts -analyzeduration 2147483647 -probesize 2147483647"
 COMSKIP="comskip -q -n"
 
@@ -155,8 +186,13 @@ mv "${QF}" "${QFD}" || die "ERROR: Could not transition job entry from queued to
 findSourceFile "$(< ${QFD})"
 
 prepComskip
-doComchap
-doComcut
+doComskip
+if [ "${COMCUT}" != "1" ]; then
+    doComchap
+else
+    doComcut
+fi
+
 doTranscode
 doFinalMove
 

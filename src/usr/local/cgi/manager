@@ -24,6 +24,10 @@ read -r -d '' myCSS << 'EOF' || true
         background-color: #002050;
         color: green;
     }
+    tr.warn {
+        background-color: #ffcc00;
+        color: #c00000;
+    }
     tr.inactive {
         background-color: #002050;
         color: #c00000;
@@ -212,7 +216,11 @@ function loadData {
             job)        idState["${ID}"]="Q"
                         (( totalActive+=1 ))
                         ;;
-            save)       idState["${ID}"]="S"
+            save)       if [ -f "${QUEUEDIR}/${ID}.warn" ]; then
+                            idState["${ID}"]="W"
+                        else
+                            idState["${ID}"]="S"
+                        fi
                         (( totalSaved+=1 ))
                         ;;
             *)          idState["${ID}"]="E" ;;
@@ -240,8 +248,17 @@ function doListSaved {
         echo "</tr>"
 
         for i in "${idSorted[@]}"; do
-            [ "${idState[$i]}" = "S" ] || continue
-            echo "<tr class=jobs>"
+            case "${idState[$i]}" in
+                S)
+                    echo "<tr class=jobs>"
+                    ;;
+                W)
+                    echo "<tr class=warn>"
+                    ;;
+                *)
+                    continue
+                    ;;
+            esac
             echo "<td class=jobs><input type=checkbox id=$i name=id value=$i></td>"
             echo "<td class=jobs>${idShowDate[$i]}</td>"
             echo "<td class=jobs>${idShowName[$i]}</td>"
@@ -253,6 +270,7 @@ function doListSaved {
         echo "</table>"
         echo "<div>"
         echo "<button type=submit name=action value=logs>Show Logs</button>"
+        echo "<button type=submit name=action value=retry>Retry Selected</button>"
         echo "<button type=submit name=action value=delete>Delete Selected</button>"
         echo "<button type=submit name=action value=delcomp>Delete All</button>"
         echo "</div>"
@@ -474,10 +492,12 @@ function retryJob {
     local FN="${QUEUEDIR}/${ID}.working"
     local JF="${QUEUEDIR}/${ID}.job"
     local LF="${QUEUEDIR}/${ID}.log"
+    local WF="${QUEUEDIR}/${ID}.warn"
     local DN="${QUEUEDIR}/working-${ID}"
     if [ -f "$FN" ] ; then
         [ -d "$DN" ] && rm -rf "$DN" || true
         [ -f "$LF" ] && rm -f "$LF" || true
+        [ -f "$WF" ] && rm -f "$WF" || true
         echo "Retrying $ID<br>"
         mv "$FN" "$JF" || echo "ERROR: Failed to insert stale job into working queue"
     fi
