@@ -75,6 +75,32 @@ read -r -d '' myCSS << 'EOF' || true
     }
 EOF
 #################################################################
+# inline script block variable
+#################################################################
+read -r -d '' myJSCRIPT << 'EOF' || true
+<script type="text/javascript">
+function getNearestTableAncestor(htmlElementNode) {
+    while (htmlElementNode) {
+        htmlElementNode = htmlElementNode.parentNode;
+        if (htmlElementNode.tagName.toLowerCase() === 'table') {
+            return htmlElementNode;
+        }
+    }
+    return undefined;
+}
+function toggle(src,name) {
+    cb=document.getElementsByName("id");
+    for (i = 0; i < cb.length; i++) {
+        tParent=getNearestTableAncestor(cb[i]);
+        if (tParent.getAttribute("name") == name) {
+            cb[i].checked = src.checked;
+        }
+    }
+}
+</script>
+EOF
+
+#################################################################
 # globals
 #################################################################
 cgiAction=""
@@ -135,6 +161,7 @@ function doHeader {
         echo "<meta http-equiv=refresh content=30>"
     fi
     echo "<style>${myCSS}</style>"
+    echo "${myJSCRIPT}"
     echo "<title>PlexPost Manager</title>"
     echo "</head>"
     echo "<body>"
@@ -238,13 +265,13 @@ function doListSaved {
     echo "<fieldset class=jobs>" 
     echo "<legend>Completed Jobs</legend>"
     if [ ${totalSaved} -gt 0 ] ;then
-        echo "<table class=jobs>"
+        echo "<table class=jobs name=savedjobs>"
         echo '<tr class="jobs">'
-        echo '<th class="jobs">Select</td>'
-        echo '<th class="jobs">Date</td>'
-        echo '<th class="jobs">Show</td>'
-        echo '<th class="jobs">Episode</td>'
-        echo '<th class="jobs">Name</td>'
+        echo "<th class=\"jobs\"><input type=checkbox value=yes onClick='toggle(this,\"savedjobs\")'></th>"
+        echo '<th class="jobs">Date</th>'
+        echo '<th class="jobs">Show</th>'
+        echo '<th class="jobs">Episode</th>'
+        echo '<th class="jobs">Name</th>'
         echo "</tr>"
 
         for i in "${idSorted[@]}"; do
@@ -287,14 +314,13 @@ function doListActive {
     echo "<fieldset class=jobs>" 
     echo "<legend>Active Jobs</legend>"
     if [ ${totalActive} -gt 0 ] ;then
-        echo "<table class=jobs>"
-        echo '<tr class="jobs">'
-        echo '<th class="jobs">Select</td>'
-        echo '<th class="jobs">Date</td>'
-        echo '<th class="jobs">Show</td>'
-        echo '<th class="jobs">Episode</td>'
-        echo '<th class="jobs">Name</td>'
-        echo '<th class="jobs">State</td>'
+        echo "<table class=jobs name=activejobs>"
+        echo "<th class=\"jobs\"><input type=checkbox value=yes onClick='toggle(this,\"activejobs\")'></th>"
+        echo '<th class="jobs">Date</th>'
+        echo '<th class="jobs">Show</th>'
+        echo '<th class="jobs">Episode</th>'
+        echo '<th class="jobs">Name</th>'
+        echo '<th class="jobs">State</th>'
         echo "</tr>"
 
         for i in "${idSorted[@]}"; do
