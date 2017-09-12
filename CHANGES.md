@@ -1,5 +1,9 @@
 # Change Log
 
+## Version 2.32
+1. Implemented error handling to detect and cleanly abort if the transcoder does not produce an output file.
+2. Added a select/deselect-all toggle to the plexpost manager web interface.
+
 ## Version 2.31
 Reworked the processing code with the following changes:
 1. Rather than relying on comchap/comscut to successfully run the comskip proces, we now run that separately.
