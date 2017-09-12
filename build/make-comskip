@@ -19,4 +19,5 @@ EXEBASE=${TARGET}/usr/local/bin
 mkdir -p ${EXEBASE}
 umask 022
 cp ${BASE}/comskip ${EXEBASE}
+cp ${BASE}/comskip-gui ${EXEBASE}
 
