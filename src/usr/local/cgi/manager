@@ -82,7 +82,7 @@ read -r -d '' myJSCRIPT << 'EOF' || true
 function getNearestTableAncestor(htmlElementNode) {
     while (htmlElementNode) {
         htmlElementNode = htmlElementNode.parentNode;
-        if (htmlElementNode.tagName.toLowerCase() === 'table') {
+        if (htmlElementNode.tagName.toLowerCase() == 'table') {
             return htmlElementNode;
         }
     }
