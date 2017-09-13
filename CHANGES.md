@@ -1,5 +1,11 @@
 # Change Log
 
+## Version 2.33
+1. Minor syntax correction in manager
+1. Update sources
+    1. Handbrake is now 1.0.4
+    1. comskip 0.81.098
+
 ## Version 2.32
 1. Implemented error handling to detect and cleanly abort if the transcoder does not produce an output file.
 2. Added a select/deselect-all toggle to the plexpost manager web interface.
