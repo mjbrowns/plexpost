@@ -105,7 +105,7 @@ doTranscode() {
     do_log "INFO: (doTranscode) - Starting Transcode (using ${TRANSCODER##*/})"
     
     ${TRANSCODER} "${WF2}" "${WF3}" &> ${WORKDIR}/transcode.log || die "ERROR: plexprocess-transcode exited with error $?"
-    if [ -f "${WF3}" ] ;then
+    if [ ! -f "${WF3}" ] ;then
         die "ERROR: (doTranscode) Transcoder thread exited but did not provide an output file! Can not continue!"
     fi
     OLDSZ=$(stat -Lc %s "${WF2}")
