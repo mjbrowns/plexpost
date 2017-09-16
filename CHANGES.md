@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 2.34
+1. Fix logic error testing transcode output
+
 ## Version 2.33
 1. Minor syntax correction in manager
 1. Update sources
