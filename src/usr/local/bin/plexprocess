@@ -110,7 +110,7 @@ doTranscode() {
     fi
     OLDSZ=$(stat -Lc %s "${WF2}")
     NEWSZ=$(stat -Lc %s "${WF3}")
-    if [ $((${OLDSZ}/5 > ${NEWSZ})) -ne 0 ]; then
+    if [ $((${OLDSZ}/8 > ${NEWSZ})) -ne 0 ]; then
         echo "WARNING: (doTranscode) Transcoded file smaller than expected ($OLDSZ vs $NEWSZ)!" > "${QFW}"
         do_log "WARNING: (doTranscode) Transcoded file smaller than expected ($OLDSZ vs $NEWSZ)!"
     fi
