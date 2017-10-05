@@ -1,5 +1,9 @@
 # Change Log
 
+## Version 2.35
+1. Fixed a few minor bugs
+1. Configured TZ variable to be inherited by the manager process so the web reports show the correct time.
+
 ## Version 2.34
 1. Fix logic error testing transcode output
 
