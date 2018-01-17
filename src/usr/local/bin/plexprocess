@@ -188,13 +188,21 @@ mv "${QF}" "${QFD}" || die "ERROR: Could not transition job entry from queued to
 
 findSourceFile "$(< ${QFD})"
 
-prepComskip
-doComskip
-if [ "${COMCUT}" != "1" ]; then
-    doComchap
-else
-    doComcut
-fi
+case "${COMCUT}" in
+    -1)
+        WF2="${WF1}"
+        ;;
+    0)
+        prepComskip
+        doComskip
+        doComchap
+        ;;
+    1)
+        prepComskip
+        doComskip
+        doComcut
+        ;;
+esac
 
 doTranscode
 doFinalMove

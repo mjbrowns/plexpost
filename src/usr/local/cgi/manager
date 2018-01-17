@@ -402,6 +402,7 @@ function doCleanup {
     cleanFile "${QUEUEDIR}/${ID}.save"
     cleanFile "${QUEUEDIR}/${ID}.working"
     cleanFile "${QUEUEDIR}/${ID}.log"
+    cleanFile "${QUEUEDIR}/${ID}.warn"
     cleanDir  "${QUEUEDIR}/working-${ID}"
     echo "</ul>"
 }
@@ -449,10 +450,16 @@ function displayLogs {
     echo '<a name="top">'
     echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Job Log: $ID</legend>"
     local LF="$QUEUEDIR/$ID.log"
+    local WF="$QUEUEDIR/$ID.log"
     local LD="$QUEUEDIR/working-$ID"
     if [ -f "$LF" ]; then
         echo "<fieldset class=logfile><legend class=logfile>$ID.log</legend>"
         echo "<pre class=logfile>$(<$LF)</pre>"
+        echo "</fieldset>"
+    fi
+    if [ -f "$WF" ]; then
+        echo "<fieldset class=logfile><legend class=logfile>$ID.warn</legend>"
+        echo "<pre class=logfile>$(<$WF)</pre>"
         echo "</fieldset>"
     fi
 

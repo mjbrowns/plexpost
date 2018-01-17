@@ -29,7 +29,7 @@ VOLUME /postdata
 # QUEUETIMER tells the manager how long to sleep between each scan of the queue
 # QUEUEDAYS tells the manager how long to keep completed queue entries.  
 # Note that if errors are detected, the queue is stored in a .save file and never deleted, nor is its workspace tree under the QUEUEDIR
-# COMCUT=1 uses the comcut processor; COMCUT=0 uses the comchap processor
+# COMCUT=1 uses the comcut processor; COMCUT=0 uses the comchap processor; COMCUT=-1 disables commercial processing altogether
 # REMOVETS=1 tells the processor to remove the .ts source files upon successful transcodes.  
 # REMOVETS=0 tells the processor to rename the .ts source files to .ts-sav
 # TSCLEAN=1 tells the queue manager to scan the MOVIE and TV libraries for .ts-sav files and remove them once they are older than TSDAYS

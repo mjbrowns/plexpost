@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 2.4
+1. FIXED: With commercial processing, if commercials are not found, that generates a warning that shows in the web manager.  However, the warning file was not being displayed by the log display function.
+1. UPDATED: Commercial processing.  Since Plex now has the ability to run comskip itself, the meanings of the COMCUT environment variable have been changed as follows:
+    *. COMCUT=-1 <-- Commercial processing will be completely disabled
+    *. COMCUT=0  <-- Commercials will be detected and marked but not deleted
+    *. COMCUT=1  <-- Commercials will be detected and deleted
+
 ## Version 2.35
 1. Fixed a few minor bugs
 1. Configured TZ variable to be inherited by the manager process so the web reports show the correct time.
