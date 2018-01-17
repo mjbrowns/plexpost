@@ -121,7 +121,9 @@ For more information on the *plexpost* image environment variables, see the comm
   * **TSCLEAN** Default is 1.  If enabled, once per day the queue manager will scan the media libraries for .mkv-ts files, and if they are older than **TSDAYS** it will delete them.  The point here is to make sure you have the original recording around for a while in case automated commercial removal makes a mess of things.
   * **MAIL** settings.  See the examples in the docker-compose.yml.  Fairly self explanatory and very easy to use if you have an outbound relay set up on your network, or an ISP that is permissive to their subscribers without auth.  Basically if MAILTO is set it will send an email to alert you if anything goes wrong during post-processing.
   * **SLACK_HOOK** Default is blank.  If set, sends notifications to the SLACK channel linked to the webhook URL.
-  * **TRANSCODE** Default is blank.  If set, will use the path specified as the transcoder to use.  If not specified, defaults to /usr/local/bin/plexprocess-transcode.  The default script will use Handbrake to transcode the result into h.264 and put the result into the plex library with the original name but an extension of .mkv
+  * **TRANSCODE** Default is blank.  
+  If set, will use the path specified as the transcoder to use.  If not specified, defaults to /usr/local/bin/plexprocess-transcode.
+  The default script will use Handbrake to transcode the result into h.264 and put the result into the plex library with the original name but an extension of .mkv.
   Custom scripts should take $1 as input file path and $2 as output file path.
   * **COMSKIP_INI** Default is /config.  Setting this changes the location of the comskip.ini files.  The standard default comskip.ini is copied from /usr/local/etc/comskip.ini into this directory at container start if it is not already there.  If this directory contains a **filters.cfg** file, this file will be parsed as a set of match statements that correspond to TV show names (some wildcard support).  The processor will use the file with the first match that succeeds, or comskip.ini if none match.
 
