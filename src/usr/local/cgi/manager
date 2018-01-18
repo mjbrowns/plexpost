@@ -450,7 +450,7 @@ function displayLogs {
     echo '<a name="top">'
     echo "<div class=cleanup><fieldset class=cleanup><legend class=cleanup>Job Log: $ID</legend>"
     local LF="$QUEUEDIR/$ID.log"
-    local WF="$QUEUEDIR/$ID.log"
+    local WF="$QUEUEDIR/$ID.warn"
     local LD="$QUEUEDIR/working-$ID"
     if [ -f "$LF" ]; then
         echo "<fieldset class=logfile><legend class=logfile>$ID.log</legend>"
