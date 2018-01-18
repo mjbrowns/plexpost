@@ -1,7 +1,8 @@
 # Change Log
 
-## Version 2.5
+## Version 2.40
 * Fixed stupid typo in filename setting for warning file display.
+* Fixed version change not in sequence
 
 ## Version 2.4
 1. FIXED: With commercial processing, if commercials are not found, that generates a warning that shows in the web manager.  However, the warning file was not being displayed by the log display function.
