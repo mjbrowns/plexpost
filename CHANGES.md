@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 2.5
+* Fixed stupid typo in filename setting for warning file display.
+
 ## Version 2.4
 1. FIXED: With commercial processing, if commercials are not found, that generates a warning that shows in the web manager.  However, the warning file was not being displayed by the log display function.
 1. UPDATED: Commercial processing.  Since Plex now has the ability to run comskip itself, the meanings of the COMCUT environment variable have been changed as follows:
