@@ -1,5 +1,9 @@
 # Change Log
 
+## Version 2.41
+* bugfix in doComchap inverted boolean test.
+* updated to latest comskip/comchap/s6
+
 ## Version 2.40
 * Fixed stupid typo in filename setting for warning file display.
 * Fixed version change not in sequence
