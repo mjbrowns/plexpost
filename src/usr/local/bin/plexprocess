@@ -2,7 +2,9 @@
 [ -f ${QUEUEDIR}/.debug ] && set -x
 
 do_log() {
-    echo "${QE} - $@"
+    now="$(date +'%b %d %X')"
+    echo "$now - ${QE} - $@"
+
 }
 
 die() {
