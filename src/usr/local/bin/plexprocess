@@ -69,7 +69,7 @@ doComskip() {
 
 doComchap() {
     do_log "INFO: (doComchap) - Marking Commercials in source file"
-    if [ -f "${WF1%.*}.edl" ] ; then
+    if [ ! -f "${WF1%.*}.edl" ] ; then
         do_log "INFO: (doComchap) - No EDL file available, skipping"
         ln -sf "${WF1}" "${WF2}"
         return 0
