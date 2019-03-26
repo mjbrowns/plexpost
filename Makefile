@@ -94,7 +94,7 @@ $(PLEXPOST): docker
 push: $(PLEXPOST)
 ifndef VERSION
 	@echo You must specify a version to push
-	@echo use: make VERSISON=1.99
+	@echo use: make VERSION=1.99
 else
 	docker tag $(PLEXPOST):latest $(PLEXPOST):$(VERSION)
 	docker push $(PLEXPOST):latest
